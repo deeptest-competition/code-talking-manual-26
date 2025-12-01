@@ -1,0 +1,7 @@
+venv
+.env
+embeddings.npy
+faiss.index*
+__pycache__/
+test_bricksllm*
+results/**

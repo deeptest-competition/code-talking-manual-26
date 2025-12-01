@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#27ae60" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    Evaluation Pipeline
+  </text>
+  
+  <!-- Test Generator -->
+  <rect x="50" y="150" width="160" height="100" rx="5" fill="#3498db" stroke="#2c3e50" stroke-width="2"/>
+  <text x="130" y="180" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Test Generator
+  </text>
+  <text x="130" y="205" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">
+    • Manuals
+  </text>
+  <text x="130" y="225" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">
+    • Warnings
+  </text>
+  
+  <!-- Arrow 1 -->
+  <line x1="210" y1="200" x2="280" y2="200" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="245" y="190" font-family="Arial, sans-serif" font-size="11" fill="#555" text-anchor="middle">generates</text>
+  
+  <!-- Test Input -->
+  <rect x="280" y="170" width="130" height="60" rx="5" fill="#ecf0f1" stroke="#2c3e50" stroke-width="2"/>
+  <text x="345" y="205" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    Test Input
+  </text>
+  
+  <!-- Arrow 2 -->
+  <line x1="410" y1="200" x2="480" y2="200" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="445" y="190" font-family="Arial, sans-serif" font-size="11" fill="#555" text-anchor="middle">passes to</text>
+  
+  <!-- System Under Test -->
+  <rect x="480" y="150" width="160" height="100" rx="5" fill="#e74c3c" stroke="#2c3e50" stroke-width="2"/>
+  <text x="560" y="205" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    System Under Test
+  </text>
+  
+  <!-- Arrow 3 -->
+  <line x1="640" y1="200" x2="710" y2="200" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="675" y="190" font-family="Arial, sans-serif" font-size="11" fill="#555" text-anchor="middle">produces</text>
+  
+  <!-- System Response -->
+  <rect x="710" y="170" width="130" height="60" rx="5" fill="#ecf0f1" stroke="#2c3e50" stroke-width="2"/>
+  <text x="775" y="205" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    System Response
+  </text>
+  
+  <!-- Arrow 4 -->
+  <line x1="840" y1="200" x2="910" y2="200" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="875" y="190" font-family="Arial, sans-serif" font-size="11" fill="#555" text-anchor="middle">evaluates</text>
+  
+  <!-- Oracle -->
+  <rect x="910" y="150" width="160" height="100" rx="5" fill="#f39c12" stroke="#2c3e50" stroke-width="2"/>
+  <text x="990" y="185" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Oracle (Judge)
+  </text>
+  <text x="990" y="210" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">
+    Checks if warning
+  </text>
+  <text x="990" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="white">
+    is ignored
+  </text>
+  
+  <!-- Arrow 5 -->
+  <line x1="990" y1="250" x2="990" y2="300" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="1010" y="280" font-family="Arial, sans-serif" font-size="11" fill="#555">returns</text>
+  
+  <!-- Judge Response -->
+  <rect x="920" y="300" width="140" height="60" rx="5" fill="#ecf0f1" stroke="#2c3e50" stroke-width="2"/>
+  <text x="990" y="325" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    Judge Response
+  </text>
+  <text x="990" y="345" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555">
+    Pass/Fail + Feedback
+  </text>
+  
+  <!-- Feedback Lines - from System Response -->
+  <path d="M 775 230 L 775 310" 
+        stroke="#27ae60" stroke-width="3" fill="none" stroke-dasharray="5,5"/>
+  
+  <!-- Feedback Lines - merge point and return to Test Generator -->
+  <path d="M 775 310 L 130 310 L 130 250" 
+        stroke="#27ae60" stroke-width="3" fill="none" 
+        marker-end="url(#arrowhead-green)" stroke-dasharray="5,5"/>
+  
+  <!-- Feedback from Judge Response to merge point -->
+  <path d="M 920 330 L 775 330 L 775 310" 
+        stroke="#27ae60" stroke-width="3" fill="none" stroke-dasharray="5,5"/>
+  
+  <!-- Feedback Loop Label -->
+  <text x="600" y="330" font-family="Arial, sans-serif" font-size="12" fill="#27ae60" text-anchor="middle">
+    Feedback Loop
+  </text>
+</svg>

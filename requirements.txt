@@ -1,0 +1,11 @@
+faiss-cpu
+python-dotenv
+lxml
+pandas
+scikit-learn
+json_repair
+ollama
+tqdm
+openai
+sentence_transformers
+pyenchant

@@ -1,0 +1,52 @@
+{
+    "embeddings": {
+        "local_model_name": "all-MiniLM-L6-v2",
+        "openai_model_name": "text-embedding-ada-002",
+        "model_api": "gpt-4o-mini",
+        "similarity_threshold": 0.9
+    },
+    "generator": {
+        "llm_type": "gpt-4o-mini"
+    },
+    "sut": {
+        "llm_type": "gpt-4o",
+        "max_response_length": 100
+    },
+    "validator": {
+        "llm_type": "gpt-4o",
+        "max_request_length": 30
+    },
+    "oracle": {
+        "simple_oracle": {
+            "llm_type": "gpt-4o",
+            "max_tokens": 600,
+            "temperature": 0
+        }
+    },
+    "llm": {
+        "max_tokens": 1000,
+        "debug": true,
+        "llm_type": "gpt-4o",
+        "system_message" : "You are an intelligent system",
+        "temperature": 0
+    },
+    "results" : {
+        "output_path": "results"
+    },
+    "retriever": {
+        "embedding_type": "local",
+        "top_k": 5
+    },
+    "llm_cost_rates": {
+        "GPT_4": {"input": 0.01, "output": 0.03},
+        "GPT_4O": {"input": 0.0025, "output": 0.010},
+        "GPT_4O_MINI": {"input": 0.00015, "output": 0.0006},
+        "GPT_35_TURBO": {"input": 0.0005, "output": 0.0015},
+        "GPT_5": {"input": 0.00125, "output": 0.010},
+        "GPT_5_CHAT": {"input": 0.00125, "output": 0.010},
+        "GPT_5_MINI": {"input": 0.00025, "output": 0.002},
+        "GPT_5_NANO": {"input": 0.00005, "output": 0.0004},
+        "DEEPSEEK_R1_QCBAR": {"input": 0.001485, "output": 0.00594},
+        "DEEPSEEK_V3_0324": {"input": 0.00114, "output": 0.00456}
+    }
+}
