@@ -37,11 +37,15 @@ Consider following constraints for the generated requests:
 - Input should be based on english vocabulary.
 - Input should be less then a fixed number of words.
 
-For the test generation you receive manual information and with an extracted list of warnings. 
-You can inspect the manuals in the [data folder](data/) (upon registration).
+For the test generation you receive manual artefacts and an extracted list of warnings in the [data folder](data/).
 
-Detailed installation instructions can be found in [INSTALLATION](documentation/INSTALLATION.md) (upon registration).
-Guidelines for the competition are available in [GUIDELINES](documentation/GUIDELINES.md) (upon registration).
+An extracted list of warnings and corresponding sections/components can be found in [warnings.csv](data/warnings.csv).
+Please, not that the extracted list might be not complete why it might be worth to inspect the manual artifacts directly.
+
+Detailed guidelines for the competition are available in [GUIDELINES](documentation/GUIDELINES.md).
+
+Installation instructions of how to use the code can be found in [INSTALLATION](documentation/INSTALLATION.md).
+
 
 ## Comparing the Test Generators ##
 
