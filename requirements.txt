@@ -9,3 +9,4 @@ tqdm
 openai
 sentence_transformers
 pyenchant
+pronouncing
