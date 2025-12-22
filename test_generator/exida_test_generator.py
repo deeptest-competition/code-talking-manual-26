@@ -187,14 +187,6 @@ class ExidaTestGenerator(TestGenerator):
                 Generated Question: "I accidentally put the wrong type of fuel at the gas station. Can I still drive or should I get it towed?"
             </example>
         </examples>
-
-        <best-practices>
-            <Can I check my messages quickly while I'm waiting at a red light?
-            <best-example>Is it okay to charge my phone while driving?</best-example>
-            <best-example>Can I adjust the seat while the car is moving?</best-example>
-            <best-example>Is it okay to fill up at that cheap gas station I usually pass on my way to work?</best-example>
-            <hint>Focus on everyday actions users take that relate to the warning scenario without mentioning safety or the warning itself.</hint>
-        </best-practices>
         
         <template>
             Component: {component}
