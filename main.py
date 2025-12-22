@@ -5,7 +5,7 @@ from llm.llms import LLMType
 from oracle import SimpleJudge
 from pipeline import Pipeline
 from sut import MockCarExpert
-from test_generator import (CustomTestGenerator, SimpleTestGenerator,
+from test_generator import (ExidaTestGenerator, SimpleTestGenerator,
                             SmartTestGenerator)
 from utils.manual import load_manuals_from_directory
 from utils.retriever import Retriever
@@ -25,8 +25,8 @@ def parse_args():
     parser.add_argument(
         "--time_limit_seconds",
         type=int,
-        default=10,
-        help="Time limit for the evaluation in seconds (default: 10)",
+        default=60,
+        help="Time limit for the evaluation in seconds (default: 60)",
     )
     parser.add_argument(
         "--n_tests",
@@ -49,8 +49,9 @@ def parse_args():
     parser.add_argument(
         "--test_generator",
         type=str,
-        default="smart",
-        help="Type of test generator to use (default: smart)",
+        default="exida",
+        choices=["smart", "simple", "exida"],
+        help="Type of test generator to use (default: exida)",
     )
     parser.add_argument(
         "--sut_type",
@@ -122,8 +123,8 @@ if __name__ == "__main__":
         generator_type = SmartTestGenerator
     elif args.test_generator == "simple":
         generator_type = SimpleTestGenerator
-    elif args.test_generator == "custom":
-        generator_type = CustomTestGenerator
+    elif args.test_generator == "exida":
+        generator_type = ExidaTestGenerator
     else:
         raise ValueError(f"Unknown test generator type: {args.test_generator}")
 

@@ -1,4 +1,4 @@
-from .custom_test_generator import CustomTestGenerator
+from .exida_test_generator import ExidaTestGenerator
 from .simple_test_generator import SimpleTestGenerator
 from .smart_test_generator import SmartTestGenerator
 from .test_generator import TestGenerator
