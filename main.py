@@ -86,7 +86,7 @@ def parse_args():
     parser.add_argument(
         "--generator_llm",
         type=str,
-        default="gpt-4o-mini",
+        default="gpt-4o",
         help="Type of LLM to use for the generation. Optional (default: gpt-4o).",
     )
     return parser.parse_args()

@@ -1,11 +1,11 @@
 generation:
-  temperature: 0.75      
+  temperature: 0.8      
   max_tokens: 150          
   max_attempts: 3     
 
 diversity:
   max_recent_questions: 5
-  jaccard_threshold: 0.6
+  jaccard_threshold: 0.8
 
 weighting:
   success_count_exponent: 2     
