@@ -10,3 +10,4 @@ openai
 sentence_transformers
 pyenchant
 pronouncing
+black
