@@ -1,15 +1,11 @@
 generation:
-  temperature: 0.6
-  max_tokens: 100          
-  max_attempts: 3     
+  temperature: 0.75
+  max_tokens: 300          
+  batch_size: 3
 
 diversity:
-  max_recent_questions: 5
-  jaccard_threshold: 0.5
-
-weighting:
-  success_count_exponent: 2     
-  min_weight: 1                 
+  max_recent_questions: 8
+  jaccard_threshold: 0.4
 
 exploitation:
-  instances_to_add: 1     
+  instances_to_add: 1

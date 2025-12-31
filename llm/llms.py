@@ -162,6 +162,7 @@ def pass_llm(
     llm_type=DEFAULT_LLM,
     context=None,
     system_message=DEFAULT_SYSTEM_MESSAGE,
+    n=1,
 ):
     prompt = msg
     start_time = time.time()
@@ -196,6 +197,7 @@ def pass_llm(
                 system_message,
                 context,
                 model=llm_type.value,
+                n=n,
             )
         elif llm_type in DEEPSEEK_MODELS:
             from llm.call_deepseek import call_deepseek
@@ -222,7 +224,12 @@ def pass_llm(
     # Clean up the response text
     if response_text is None:
         response_text = ""
-    response_text = response_text.replace('"', "")
+    
+    # Handle both single string and list responses
+    if isinstance(response_text, list):
+        response_text = [r.replace('"', "") if r else "" for r in response_text]
+    else:
+        response_text = response_text.replace('"', "")
 
     if DEBUG:
         log.info(f"QUESTION: {prompt}")

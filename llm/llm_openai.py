@@ -23,6 +23,7 @@ def call_openai(
     system_message=None,
     context=None,
     model=DEPLOYMENT_NAME,
+    n=1,
 ):
 
     if system_message is None:
@@ -40,6 +41,7 @@ def call_openai(
         temperature=temperature,
         system_message=system_message,
         context=context,
+        n=n,
     )
 
 
