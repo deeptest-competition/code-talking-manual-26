@@ -1,10 +1,10 @@
 generation:
-  temperature: 0.75
-  max_tokens: 300          
+  temperature: 0.7
+  max_tokens: 200          
   batch_size: 3
 
 diversity:
-  max_recent_questions: 8
+  max_recent_questions: 3
   jaccard_threshold: 0.4
 
 exploitation:
