@@ -9,6 +9,9 @@ class Warning(BaseModel):
     warning_text: str
     top_section_id: str
     top_section_title: str
+    feedback: list[str] = []
+    success: int = 1
+    failure: int = 1
 
 
 class TestCase(BaseModel):
