@@ -1,17 +1,17 @@
 generation:
   scene:
-    temperature: 0.8
+    temperature: 0.9
     max_tokens: 100
   intent:
     temperature: 0.4
-    max_tokens: 50
+    max_tokens: 30
   question:
     temperature: 0.8
     max_tokens: 50
   batch_size: 3
 
 diversity:
-  max_recent_questions: 3
+  max_recent_questions: 8
   jaccard_threshold: 0.4
 
 exploitation:

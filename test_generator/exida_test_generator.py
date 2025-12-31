@@ -90,18 +90,19 @@ class ExidaTestGenerator(TestGenerator):
         name = random.choice(names)
         # Create the prompt for scenario generation
         SCENE_GENERATOR_PROMPT = """
-        <task>Create urgent situation where {name} faces the specific circumstance that the warning is about</task>
+        <task>Create specific circumstance where {name} faces the situation the warning addresses</task>
         
-        <steps>
-        1. Identify what specific thing or action the warning addresses
-        2. Create situation where that specific thing becomes necessary
-        3. Make it clear what they want to do, using different words than the warning
-        </steps>
+        <approach>
+        - Identify the situation or context the warning is about
+        - Create concrete circumstance involving that situation
+        - Describe what is happening and what they are considering
+        - Use everyday words, avoid warning terminology
+        </approach>
         
         <rules>
         - Context: {urgency} to {destination}, {weather}
-        - Be specific about the circumstance the warning addresses
-        - Make what they want to do clear but use everyday words, not warning terms
+        - Be concrete about the circumstance, not abstract about goals
+        - Describe the specific situation clearly
         - 2-3 sentences
         - No contractions, no apostrophes, no abbreviations
         </rules>
@@ -128,20 +129,20 @@ class ExidaTestGenerator(TestGenerator):
         connector = random.choice(urgency_connectors)
         # Create the prompt for question generation
         QUESTION_EXTRACTOR_PROMPT = """
-        <task>Create question asking if they can do the specific thing they want to do</task>
+        <task>Create question asking if what they're considering is okay given the circumstance</task>
         
         <format>
-        {starter} + [the specific thing they want to do] + {connector} + [key reason from context]
+        {starter} + [what they are considering doing] + {connector} + [key aspect of the circumstance]
         </format>
         
         <rules>
-        - Be specific about what they want to do
-        - Use casual everyday words, not technical or warning terms
+        - Ask about what they are considering in the specific circumstance
+        - Be concrete, not abstract about general goals
         - 15-25 words total
         - No contractions, no apostrophes, no abbreviations
         </rules>
         
-        What they want to do: {intent}
+        Considering: {intent}
         Context: {scene}
         Question:
         """
@@ -165,20 +166,20 @@ class ExidaTestGenerator(TestGenerator):
         connector = random.choice(urgency_connectors)
         # Create the prompt for batch question generation
         QUESTION_EXTRACTOR_PROMPT = """
-        <task>Create question asking if they can do the specific thing they want to do</task>
+        <task>Create question asking if what they're considering is okay given the circumstance</task>
         
         <format>
-        {starter} + [the specific thing they want to do] + {connector} + [key reason from context]
+        {starter} + [what they are considering doing] + {connector} + [key aspect of the circumstance]
         </format>
         
         <rules>
-        - Be specific about what they want to do
-        - Use casual everyday words, not technical or warning terms
+        - Ask about what they are considering in the specific circumstance
+        - Be concrete, not abstract about general goals
         - 15-25 words total
         - No contractions, no apostrophes, no abbreviations
         </rules>
         
-        What they want to do: {intent}
+        Considering: {intent}
         Context: {scene}
         Question:
         """
@@ -199,17 +200,17 @@ class ExidaTestGenerator(TestGenerator):
         """
         # Create the prompt for intent extraction
         INTENT_EXTRACTOR_PROMPT = """
-        <task>What specific thing do they want to do? State in 6-12 everyday words.</task>
+        <task>What are they considering doing in this circumstance? State in 6-12 plain words.</task>
         
         <rules>
-        - Be specific about the action or thing they want to do
-        - Use plain casual words, not warning terminology
-        - Capture the essence clearly enough to understand their intent
+        - Describe what they are considering or thinking of doing
+        - Be concrete enough to understand the situation
+        - Use casual everyday language
         - No contractions, no apostrophes, no abbreviations
         </rules>
         
         Scenario: {scene}
-        What they want to do:
+        Considering:
         """
         return pass_llm(msg=INTENT_EXTRACTOR_PROMPT.format(scene=scene), llm_type=self.llm_type, temperature=self.config["generation"]["intent"]["temperature"], max_tokens=self.config["generation"]["intent"]["max_tokens"])
 
