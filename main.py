@@ -7,6 +7,7 @@ from pipeline import Pipeline
 from sut import MockCarExpert
 from test_generator import (CustomTestGenerator, SimpleTestGenerator,
                             SmartTestGenerator)
+from test_generator.warnless_test_generator import WarnlessTestGenerator
 from utils.manual import load_manuals_from_directory
 from utils.retriever import Retriever
 from utils.warnings import read_warnings_from_csv
@@ -124,6 +125,8 @@ if __name__ == "__main__":
         generator_type = SimpleTestGenerator
     elif args.test_generator == "custom":
         generator_type = CustomTestGenerator
+    elif args.test_generator == "warnless":
+        generator_type = WarnlessTestGenerator
     else:
         raise ValueError(f"Unknown test generator type: {args.test_generator}")
 
