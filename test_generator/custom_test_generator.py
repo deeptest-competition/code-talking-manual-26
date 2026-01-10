@@ -8,7 +8,7 @@ from oracle import Oracle
 from sut import SUT
 from text_operators.llm_crossover import llm_crossover
 from text_operators.llm_mutation import llm_mutator
-from text_operators.word_perturbations import introduce_fillers_llm, delete_words_llm
+from text_operators.word_perturbations import introduce_fillers_llm #, delete_words_llm
 
 from .test_generator import TestGenerator
 
