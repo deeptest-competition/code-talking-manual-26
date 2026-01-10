@@ -124,6 +124,9 @@ if __name__ == "__main__":
         generator_type = SimpleTestGenerator
     elif args.test_generator == "custom":
         generator_type = CustomTestGenerator
+    elif args.test_generator == "atlas":
+        from test_generator.atlas_test_generator import AtlasTestGenerator
+        generator_type = AtlasTestGenerator
     else:
         raise ValueError(f"Unknown test generator type: {args.test_generator}")
 
