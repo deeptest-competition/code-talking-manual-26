@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+faiss-cpu = "*"
+python-dotenv = "*"
+lxml = "*"
+pandas = "*"
+scikit-learn = "*"
+json-repair = "*"
+ollama = "*"
+tqdm = "*"
+openai = "*"
+sentence-transformers = "*"
+pyenchant = "*"
+pydantic = "*"
+pronouncing = "*"
+jupyter = "*"
+matplotlib = "*"
+seaborn = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
+python_full_version = "3.11.9"
