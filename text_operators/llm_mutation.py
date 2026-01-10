@@ -11,7 +11,7 @@ MUTATION_TYPES = [
 ]
 
 MUTATION_PROMPT_GENERIC = """
-              Perform a single linguistic mutation to the input utterance. The mutation type to be applied is: {}.
+              Perform a single linguistic mutation to the input utterance according to the guidelines and specified mutation type definitions.
 
               Guidelines:
               - Preserve the original meaning.
@@ -20,7 +20,8 @@ MUTATION_PROMPT_GENERIC = """
               - The result should make sense and must not be harmful.
               - Keep it concise: ideally no more than 8 words.
               - Avoid making the sentence too complex or technical.
-              - Output only the final, mutated sentence.
+              - Output only the final, mutated sentence
+              - Don't include the Mutation Type in the output!
 
               Mutation Type Definitions:
               - SynonymReplacement: Replace one verb, noun, adjective, or adverb with a synonym.
@@ -32,18 +33,24 @@ MUTATION_PROMPT_GENERIC = """
               Examples:
 
               Input: Tell me how to turn on the heating system.  
-              Output (ModifierInsertion): Please tell me how to quickly turn on the heating system.  
+              Mutation Type: ModifierInsertion.
+              Output: Please tell me how to quickly turn on the heating system.  
 
               Input: It's cold today, how do I increase the temperature?  
-              Output (SentenceExpansion): It's negatively cold today, how do I increase the temperature in the car? 
+              Mutation Type: SentenceExpansion.
+              Output: It's negatively cold today, how do I increase the temperature in the car? 
 
               Input: I am bored.  
-              Output (ModifierInsertion): I am very bored.  
+              Mutation Type: ModifierInsertion.
+              Output: I am very bored.  
 
               Input: I need to adjust my seat.  
-              Output (DomainInstanceVariation): I need to adjust my steering wheel.  
+              Mutation Type: DomainInstanceVariation.
+              Output: I need to adjust my steering wheel.  
 
-              Input: {}  
+              Input: {}
+              Mutation Type: {}
+              Output:  
               """
 
 
