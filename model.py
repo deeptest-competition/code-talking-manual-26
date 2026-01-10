@@ -47,6 +47,7 @@ class MetaData(BaseModel):
     sut: str
     oracle: str
     config: dict
+    seed: int | None = None
     
 class Metrics(BaseModel):
     total_tests: int

@@ -89,6 +89,12 @@ def parse_args():
         default="gpt-4o-mini",
         help="Type of LLM to use for the generation. Optional (default: gpt-4o).",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Seed for random number generation (default: 42)",
+    )
     return parser.parse_args()
 
 
@@ -127,6 +133,9 @@ if __name__ == "__main__":
         generator_type = CustomTestGenerator
     elif args.test_generator == "warnless":
         generator_type = WarnlessTestGenerator
+    elif args.test_generator == "atlas":
+        from test_generator.atlas_test_generator import AtlasTestGenerator
+        generator_type = AtlasTestGenerator
     else:
         raise ValueError(f"Unknown test generator type: {args.test_generator}")
 
@@ -145,4 +154,5 @@ if __name__ == "__main__":
         warnings=warnings,
         num_tests=args.n_tests,
         time_limit_seconds=args.time_limit_seconds,
+        seed=args.seed
     )

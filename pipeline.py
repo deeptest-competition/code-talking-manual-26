@@ -13,7 +13,7 @@ import zoneinfo
 from validator.simple_validator import SimpleValidator
 from utils.console import print_error, print_user, print_sut, print_judge
 from config import get_config
-
+from utils.seed import set_seed
 config = get_config()
             
 import random
@@ -28,7 +28,10 @@ class Pipeline:
         warnings: list[Warning],
         num_tests: int | None = None,
         time_limit_seconds: int | None = None,
+        seed: int | None = None,
     ) -> None:
+        if seed is not None:
+            set_seed(seed)
         save_folder = create_save_folder(generator_type.name, config["results"]["output_path"])
         generator: TestGenerator = generator_type(
             documents, warnings, deepcopy(oracle), deepcopy(sut), **generator_kwargs
@@ -96,7 +99,8 @@ class Pipeline:
                            total_time = total_time,
                            sut = sut.__class__.__name__,
                            oracle = oracle.__class__.__name__,
-                           config = config
+                           seed = seed,
+                           config = config,
                            )
         save_all(results=results, 
                  metadata=metadata, 

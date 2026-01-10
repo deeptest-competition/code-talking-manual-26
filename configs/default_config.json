@@ -19,12 +19,12 @@
     "oracle": {
         "simple_oracle": {
             "llm_type": "gpt-4o",
-            "max_tokens": 1000,
+            "max_tokens": 2000,
             "temperature": 0.3
         }
     },
     "llm": {
-        "max_tokens": 1000,
+        "max_tokens": 1500,
         "debug": true,
         "llm_type": "gpt-4o",
         "system_message" : "You are an intelligent system",
@@ -35,7 +35,7 @@
     },
     "retriever": {
         "embedding_type": "local",
-        "top_k": 5
+        "top_k": 3
     },
     "llm_cost_rates": {
         "GPT_4": {"input": 0.01, "output": 0.03},
