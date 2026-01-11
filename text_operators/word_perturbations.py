@@ -61,6 +61,18 @@ def _get_fillers_prompt(text):
     return fillers_prompt
 
 
+def _get_delete_words_prompt(text):
+    delete_prompt = f"""Given the text: "{text}"
+                        Condense this text to at MAXIMUM 25 WORDS LONG, while:
+                            - Preserving the core information and meaning
+                            - Maintaining the original tone
+                            - Keeping the goal/intent intact
+                        Return ONLY the condensed text without any additional explanation or quotes.
+    """
+
+    return delete_prompt
+
+
 def introduce_homophones_llm(input_text, model=LLMType.GPT_4O_MINI):
     """
     Introduce homophones using LLM by processing the whole text at once.
@@ -521,6 +533,30 @@ def delete_words(input_text, deletion_probability=0.4):
             remaining_words.append(word)
 
     return " ".join(remaining_words)
+
+
+def delete_words_llm(input_text, model=LLMType.GPT_4O_MINI):
+        """
+        Delete words using LLM to make text more concise while preserving information, tone, and goal.
+        Ensures the output needs to be AT MAXIMUM 25 words long.
+        """
+
+        system_prompt = "You are a helpful assistant that condenses text while maintaining its meaning, tone, and purpose."
+        prompt = _get_delete_words_prompt(input_text)
+
+        response = pass_llm(
+            msg=prompt,
+            system_message=system_prompt,
+            llm_type=model,
+        )
+
+        result = response.strip()
+
+        # Remove quotes if present
+        if result.startswith('"') and result.endswith('"'):
+            result = result[1:-1]
+
+        return result
 
 
 WORD_PERTURBATIONS = {
