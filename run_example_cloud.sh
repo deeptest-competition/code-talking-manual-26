@@ -1,8 +1,8 @@
 python main.py \
-    --time_limit_seconds 60 \
-    --n_tests 20 \
-    --test_generator custom \
+    --time_limit_seconds 120 \
+    --n_tests 1000 \
+    --test_generator crisp \
     --sut_llm "gpt-4o" \
-    --oracle_llm "gpt-4o-mini" \
+    --oracle_llm "gpt-4o" \
     --generator_llm "gpt-4o"
 
