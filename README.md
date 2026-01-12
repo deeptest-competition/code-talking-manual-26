@@ -29,7 +29,7 @@ Information about the workshop is available at: https://conf.researchr.org/home/
 
 ## Implement Your Test Generator ##
 
-We provide a code pipeline that will integrate your test generator with the system-under-test by validating, executing and evaluating your test cases. Moreover, we offer sample test generators to show how to use the code pipeline.
+We provide a code pipeline adopted from STELLAR [4] that will integrate your test generator with the system-under-test by validating, executing and evaluating your test cases. Moreover, we offer sample test generators to show how to use the code pipeline.
 For the execution of the pipeline there is no GPU-based computation needed. Access to cloud-based LLMs will be granted.
 
 Consider following constraints for the generated requests:
@@ -68,12 +68,13 @@ The software we developed is distributed under MIT license. See the [LICENSE.md]
 
 ## Timeline
 
-| Date        | Event                         |
-|-------------|------------------------------|
-| 30/11/2025  | Registration closes          |
-| 31/12/2025  | Submission deadline          |
-| 21/01/2026  | Results announcement         |
-| 14/04/2026  | ICSE Presentation            |
+
+| Status | Date        | Event                         |
+|--------|-------------|------------------------------|
+| 🔴     | 30/11/2025  | Registration closes          |
+| 🟢     | 09/01/2026  | Submission deadline (extended) |
+| 🟢     | 21/01/2026  | Results announcement         |
+| 🟢     | 14/04/2026  | ICSE Presentation            |
 
 ## Organizers ##
 
@@ -95,3 +96,5 @@ BMW Group
 [2] Rony, M. R. A. H.; Süß, C.; Bhat, S. R.; Sudhi, V.; Schneider, J.; Vogel, M.; Teucher, R.; Friedl, K. E.; Sahoo, S. R. CarExpert: Leveraging Large Language Models for In-Car Conversational Question Answering. 2023. Fraunhofer Publica. DOI: 10.24406/publica-2245. Available at: https://publica.fraunhofer.de/handle/publica/457518
 
 [3] Giebisch, R.; Friedl, K. E.; Sorokin, L.; Stocco, A. Automated Factual Benchmarking for In-Car Conversational Systems using Large Language Models. CoRR abs/2504.01248, 2025. Schloss Dagstuhl – Leibniz Center for Informatics. https://ieeexplore.ieee.org/document/11097480
+
+[4] Sorokin, L., Vasilev, I., Friedl, K. E., and Stocco, A. (2026). STELLAR: A search-based testing framework for large language model applications. arXiv preprint arXiv:2601.00497. Available at https://arxiv.org/abs/2601.00497.
