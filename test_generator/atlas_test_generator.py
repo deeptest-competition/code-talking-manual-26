@@ -8,7 +8,7 @@ from oracle import Oracle
 from sut import SUT
 from text_operators.llm_crossover import llm_crossover
 from text_operators.llm_mutation import llm_mutator
-from text_operators.word_perturbations import delete_words, introduce_fillers_llm #, delete_words_llm
+from text_operators.word_perturbations import introduce_fillers_llm, delete_words_llm
 
 from .test_generator import TestGenerator
 
@@ -281,8 +281,7 @@ class AtlasTestGenerator(TestGenerator):
         words = candidate.split()
         # Ensure max length constraint
         if len(words) > self.max_length:
-            # candidate = delete_words_llm(candidate, model=self.llm_type)
-            candidate = delete_words(candidate)
+            candidate = delete_words_llm(candidate, model=self.llm_type)
             candidate = self._clean_request(candidate)
 
         return candidate
