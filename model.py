@@ -54,3 +54,4 @@ class Metrics(BaseModel):
     num_failures: int
     average_distance: float
     num_warnings_violated: int
+    failure_ratio: float

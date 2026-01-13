@@ -18,11 +18,13 @@ def evaluate(results: list[TestResult]) -> Metrics:
         average_distance = np.mean(distances)
         warning_ids = set(r.test_case.expected_warning_id for r in failures)
         num_warnings_violated = len(warning_ids)
+        failure_ratio = num_failures / len(results)
     return Metrics(
         total_tests=len(results),
         num_failures=num_failures,
         average_distance=average_distance,
         num_warnings_violated=num_warnings_violated,
+        failure_ratio=failure_ratio,
     )
     
 def save_all(
