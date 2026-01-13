@@ -29,10 +29,11 @@ class Pipeline:
         num_tests: int | None = None,
         time_limit_seconds: int | None = None,
         seed: int | None = None,
+        result_folder: str = "results"
     ) -> None:
         if seed is not None:
             set_seed(seed)
-        save_folder = create_save_folder(generator_type.name, config["results"]["output_path"])
+        save_folder = create_save_folder(generator_type.name, base_folder = result_folder)
         generator: TestGenerator = generator_type(
             documents, warnings, deepcopy(oracle), deepcopy(sut), **generator_kwargs
         )

@@ -5,3 +5,5 @@ faiss.index*
 __pycache__/
 test_bricksllm*
 results/**
+result**
+results**

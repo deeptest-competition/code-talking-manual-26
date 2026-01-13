@@ -6,7 +6,6 @@ from pathlib import Path
 from llm.llms import ModelStatistics
 from model import Metrics, TestResult
 
-
 def save_results(results: list[TestResult], save_folder: str) -> str:
     """
     Serializes a list of TestResult instances into a timestamped JSON file.
@@ -24,20 +23,17 @@ def save_results(results: list[TestResult], save_folder: str) -> str:
 
     return file_path
 
-
 def save_llm_usage_statistics(save_folder: str):
     with open(save_folder + "llm_usage_summary.json", "w") as f:
         usage_summary = ModelStatistics.complete_statistics()
         usage_summary["total_tokens"] = ModelStatistics.total_values()
         json.dump(usage_summary, f, indent=4)
 
-
 def create_save_folder(name, base_folder: str) -> str:
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     save_folder = f"{base_folder}/{name}_{timestamp}/"
     Path(save_folder).mkdir(parents=True, exist_ok=True)
     return save_folder
-
 
 def save_evaluation_results(
     metrics: Metrics,

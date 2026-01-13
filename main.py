@@ -94,6 +94,12 @@ def parse_args():
         default=42,
         help="Seed for random number generation (default: 42)",
     )
+    parser.add_argument(
+        "--result_folder",
+        type=str,
+        default=None,
+        help="Path to the folder where results will be saved (default: results)",
+    )
     return parser.parse_args()
 
 
@@ -148,6 +154,9 @@ if __name__ == "__main__":
     if args.generator_llm and "llm_type" in generator_config:
         generator_config["llm_type"] = args.generator_llm
 
+    if args.result_folder is None:
+        args.result_folder = config["results"].get("output_path", "results")
+
     results = Pipeline.evaluate_generator(
         oracle=oracle,
         sut=sut,
@@ -157,5 +166,6 @@ if __name__ == "__main__":
         warnings=warnings,
         num_tests=args.n_tests,
         time_limit_seconds=args.time_limit_seconds,
-        seed=args.seed
+        seed=args.seed,
+        result_folder = args.result_folder
     )
