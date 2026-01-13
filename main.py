@@ -7,7 +7,6 @@ from pipeline import Pipeline
 from sut import MockCarExpert
 from test_generator import (CustomTestGenerator, SimpleTestGenerator,
                             SmartTestGenerator)
-from test_generator.warnless_test_generator import WarnlessTestGenerator
 from utils.manual import load_manuals_from_directory
 from utils.retriever import Retriever
 from utils.warnings import read_warnings_from_csv
@@ -132,10 +131,14 @@ if __name__ == "__main__":
     elif args.test_generator == "custom":
         generator_type = CustomTestGenerator
     elif args.test_generator == "warnless":
+        from test_generator.warnless_test_generator import WarnlessTestGenerator
         generator_type = WarnlessTestGenerator
     elif args.test_generator == "atlas":
         from test_generator.atlas_test_generator import AtlasTestGenerator
         generator_type = AtlasTestGenerator
+    elif args.test_generator == "exida":
+        from test_generator.exida_test_generator import ExidaTestGenerator
+        generator_type = ExidaTestGenerator
     else:
         raise ValueError(f"Unknown test generator type: {args.test_generator}")
 

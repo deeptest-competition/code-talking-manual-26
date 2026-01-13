@@ -55,6 +55,7 @@ class OpenAIClient:
         temperature=0,
         system_message=None,
         context=None,
+        n=1,
     ):
 
         if system_message is None:
@@ -77,6 +78,7 @@ class OpenAIClient:
                     ],
                     max_completion_tokens=max_tokens,
                     temperature=1,
+                    n=n,
                 )
             else:
                 response = self.client.chat.completions.create(
@@ -87,6 +89,7 @@ class OpenAIClient:
                     ],
                     max_tokens=max_tokens,
                     temperature=temperature,
+                    n=n,
                 )
             end_time = time.time()
 
@@ -97,11 +100,17 @@ class OpenAIClient:
 
             self.token_usage += used_tokens
             OpenAIClient.total_token_usage += (
-                used_tokens  # increment global token usage
+                used_tokens
             )
 
-            response_msg = response.choices[0].message.content
-            return response_msg, input_tokens, output_tokens, end_time - start_time
+            elapsed_time = end_time - start_time
+            
+            if n == 1:
+                response_text = response.choices[0].message.content
+                return response_text, input_tokens, output_tokens, elapsed_time
+            else:
+                response_texts = [choice.message.content for choice in response.choices]
+                return response_texts, input_tokens, output_tokens, elapsed_time
 
         except BadRequestError as e:
             print("[OpenAIClient] BadRequestError:")
