@@ -1,4 +1,5 @@
-from .custom_test_generator import CustomTestGenerator
+from .crisp_test_generator import CrispTestGenerator
 from .simple_test_generator import SimpleTestGenerator
 from .smart_test_generator import SmartTestGenerator
 from .test_generator import TestGenerator
+from .custom_test_generator import CustomTestGenerator

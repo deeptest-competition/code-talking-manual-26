@@ -145,6 +145,9 @@ if __name__ == "__main__":
     elif args.test_generator == "exida":
         from test_generator.exida_test_generator import ExidaTestGenerator
         generator_type = ExidaTestGenerator
+    elif args.test_generator == "crisp":
+        from test_generator.crisp_test_generator import CrispTestGenerator
+        generator_type = CrispTestGenerator
     else:
         raise ValueError(f"Unknown test generator type: {args.test_generator}")
 
