@@ -4,7 +4,7 @@ import json
 from llm.llms import LLMType
 from oracle import SimpleJudge
 from pipeline import Pipeline
-from sut import MockCarExpert
+from sut import MockCarExpert, CarExpertAdapter
 from test_generator import (CustomTestGenerator, SimpleTestGenerator,
                             SmartTestGenerator)
 from utils.manual import load_manuals_from_directory
@@ -115,7 +115,7 @@ if __name__ == "__main__":
             retriever, llm_type=LLMType(args.sut_llm) if args.sut_llm else None
         )
     elif args.sut_type == "real":
-        raise NotImplementedError("Real SUT not provided during development")
+        sut = CarExpertAdapter()
     else:
         raise ValueError(f"Unknown SUT type: {args.sut_type}")
 

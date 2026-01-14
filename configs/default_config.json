@@ -10,7 +10,8 @@
     },
     "sut": {
         "llm_type": "gpt-4o",
-        "max_response_length": 100
+        "max_response_length": 100,
+        "car_expert_url": "http://localhost:8001"
     },
     "validator": {
         "llm_type": "gpt-4o",
