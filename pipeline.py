@@ -14,9 +14,10 @@ from validator.simple_validator import SimpleValidator
 from utils.console import print_error, print_user, print_sut, print_judge
 from config import get_config
 from utils.seed import set_seed
+from utils.logging import setup_logging
+
 config = get_config()
             
-import random
 class Pipeline:
     @staticmethod
     def evaluate_generator(
@@ -33,7 +34,13 @@ class Pipeline:
     ) -> None:
         if seed is not None:
             set_seed(seed)
+        
         save_folder = create_save_folder(generator_type.name, base_folder = result_folder)
+        
+        log = setup_logging(save_folder + "/output.log", 
+                            log_stdout=False,
+                            name = "pipeline")
+
         generator: TestGenerator = generator_type(
             documents, warnings, deepcopy(oracle), deepcopy(sut), **generator_kwargs
         )
@@ -56,6 +63,8 @@ class Pipeline:
 
             test = generator.generate_test()
 
+            log.info(f"[TEST #{len(results)+1}]")
+
             print_user(test.request)
 
             is_valid, reason = validator.validate(test)
@@ -63,6 +72,8 @@ class Pipeline:
             # if the test is not valid skip execution and evaluation
             if not is_valid:
                 print_error(f"Generated test input not valid. {reason}")
+                log.info(f"Generated test input not valid. {reason}")
+
                 results.append(TestResult(
                         test_case=test,
                         timestamp=time.time(),

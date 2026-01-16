@@ -5,6 +5,9 @@ import enchant
 import re
 from sklearn.metrics.pairwise import cosine_similarity
 from llm.utils.embeddings_local import get_embedding
+import logging as log
+
+log = log.getLogger("pipeline")
 
 config = get_config()
 

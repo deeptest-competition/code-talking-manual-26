@@ -149,7 +149,7 @@ def main():
     
     # Sidebar for folder selection
     st.sidebar.header("Settings")
-    default_folder = "./result_ranking_real_sut_f"
+    default_folder = "./result_ranking"
     results_folder = st.sidebar.text_input("Results Folder Path", value=default_folder)
     
     if not os.path.exists(results_folder):

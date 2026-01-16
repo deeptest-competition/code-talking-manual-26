@@ -214,6 +214,7 @@ def pass_llm(
         raise e
     except Exception as e:
         print_error(f"Error in pass_llm: {llm_type} | {e}")
+        log.info(f"Error in pass_llm: {llm_type} | {e}")
         response_text, input_tokens, output_tokens, elapsed_time = "", 0, 0, 0
     # Calculate elapsed time
     elapsed_time = time.time() - start_time
@@ -232,15 +233,15 @@ def pass_llm(
         response_text = response_text.replace('"', "")
 
     if DEBUG:
-        log.info(f"QUESTION: {prompt}")
-        log.info(f"ANSWER: {response_text}")
+        log.debug(f"QUESTION: {prompt}")
+        log.debug(f"ANSWER: {response_text}")
 
-    log.info(
-        f"[Overview] LLM {llm_type} calls: {ModelStatistics.get_statistics(llm_type)['calls']}"
-    )
-    log.info(
-        f"[Overview] LLM {llm_type} token usage: {ModelStatistics.get_statistics(llm_type)['total_tokens']}"
-    )
+        log.debug(
+            f"[Overview] LLM {llm_type} calls: {ModelStatistics.get_statistics(llm_type)['calls']}"
+        )
+        log.debug(
+            f"[Overview] LLM {llm_type} token usage: {ModelStatistics.get_statistics(llm_type)['total_tokens']}"
+        )
 
     return response_text
 

@@ -1,5 +1,5 @@
 python main.py \
-    --time_limit_seconds 12 \
+    --time_limit_seconds 70 \
     --n_tests 1000 \
     --test_generator crisp \
     --sut_llm "gpt-5-chat" \

@@ -7,6 +7,7 @@ import tqdm
 
 from utils.manual import load_chunks_from_directory
 from config import get_config
+import logging 
 
 config = get_config()
 
@@ -34,28 +35,31 @@ class Retriever:
         self.embedding_fnc = get_embedding_func(embedding_type)
 
         chunks, texts, metadata = load_chunks_from_directory(manual_path)
+
+        log = logging.getLogger("pipeline")
+
         if os.path.exists(self.emb_path):
-            print("[Retriever] Loading embeddings from disk...")
+            log.info("[Retriever] Loading embeddings from disk...")
             emb_matrix = np.load(self.emb_path)
         else:
-            print("[Retriever] Generating embeddings for", len(texts), "chunks...")
+            log.info("[Retriever] Generating embeddings for", len(texts), "chunks...")
             response = []
             for text in tqdm.tqdm(texts):
                 response.append(self.embedding_fnc(text))
             emb_matrix = np.array(response).astype("float32")
             np.save(self.emb_path, emb_matrix)
-            print("[Retriever] Embeddings saved to disk.")
+            log.info("[Retriever] Embeddings saved to disk.")
         dim = emb_matrix.shape[1]
 
         if os.path.exists(self.index_path):
-            print("[Retriever] Loading FAISS index from disk...")
+            log.info("[Retriever] Loading FAISS index from disk...")
             index = faiss.read_index(self.index_path)
         else:
-            print("[Retriever] Building FAISS index...")
+            log.info("[Retriever] Building FAISS index...")
             index = faiss.IndexFlatL2(dim)
             index.add(emb_matrix)
             faiss.write_index(index, self.index_path)
-            print("[Retriever] FAISS index built with", index.ntotal, "vectors and saved to disk.")
+            log.info("[Retriever] FAISS index built with", index.ntotal, "vectors and saved to disk.")
         self.index = index
         self.metadata = metadata
         self.texts = texts

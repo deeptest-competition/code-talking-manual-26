@@ -4,6 +4,10 @@ from utils.retriever import Retriever
 
 from .sut import SUT
 from config import get_config
+import logging as log
+
+# log = setup_logger("retriever", "retriever.log", log_to_stdout=True)
+
 config = get_config()
 
 class MockCarExpert(SUT):
@@ -11,7 +15,7 @@ class MockCarExpert(SUT):
         self.retriever = retriever
         self.llm_type = llm_type or LLMType[config["sut"]["llm_type"]]
 
-        print("[MockCarExpert] Using LLM: ", self.llm_type)
+        log.info("[MockCarExpert] Using LLM: ", self.llm_type)
 
     def ask(self, test_case: TestCase) -> SystemResponse:
         docs = self.retriever.retrieve_info(test_case.request)
