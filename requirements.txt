@@ -9,3 +9,6 @@ tqdm
 openai
 sentence_transformers
 pyenchant
+streamlit
+plotly
+kaleido
