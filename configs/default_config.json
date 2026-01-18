@@ -21,7 +21,8 @@
         "simple_oracle": {
             "llm_type": "gpt-4o",
             "max_tokens": 2000,
-            "temperature": 0.3
+            "temperature": 0.3,
+            "max_retries": 5
         }
     },
     "llm": {
