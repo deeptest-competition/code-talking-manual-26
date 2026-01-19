@@ -4,7 +4,8 @@ from config import get_config
 import enchant
 import re
 from sklearn.metrics.pairwise import cosine_similarity
-from llm.utils.embeddings_local import get_embedding
+from llm.utils.embeddings_local import get_embedding as get_embedding_local
+from llm.utils.embeddings_openai import get_embedding as get_embedding_openai
 import logging as log
 
 log = log.getLogger("pipeline")
@@ -15,7 +16,7 @@ config = get_config()
 class SimpleValidator(Validator):
     MAX_LENGTH = config["validator"]["max_request_length"]
 
-    def __init__(self, distance_threshold: float = 0.2):
+    def __init__(self, distance_threshold: float = 0.025, embedder: str = "openai"):
         self.storage = None  # Only needed for diversity checks
 
         # Multiple standard dictionaries: US + GB English
@@ -25,7 +26,10 @@ class SimpleValidator(Validator):
         ]
 
         self.distance_threshold = distance_threshold
+        self.embedder = embedder
+        self.embedding_func = get_embedding_openai if embedder == "openai" else get_embedding_local
         self.stored_embeddings = []
+        self.existing_requests = set()
 
     def validate(self, test_case: TestCase) -> tuple[bool, str | None]:
         """
@@ -43,8 +47,9 @@ class SimpleValidator(Validator):
             is_valid, reason = validator(request)
             if not is_valid:
                 return is_valid, reason
-            
-        self.stored_embeddings.append(get_embedding(request).reshape(1, -1))
+        
+        self.stored_embeddings.append(self.embedding_func(request).reshape(1, -1))
+        self.existing_requests.add(request)
         return True, None
 
     def _validate_length(self, request: str) -> tuple[bool, str | None]:
@@ -94,13 +99,13 @@ class SimpleValidator(Validator):
         return True, None
 
     def _validate_diversity(self, request: str) -> tuple[bool, str | None]:
-        reference_embedding = get_embedding(request).reshape(1, -1)
+        reference_embedding = self.embedding_func(request).reshape(1, -1)
         
         for embedding in self.stored_embeddings:
             similarity = cosine_similarity(reference_embedding, embedding)[0][0]
             distance = (1 - similarity) / 2
             if distance < self.distance_threshold:
-                return False, "The request is a duplicate of a previously validated request"
+                return False, f"The request is a duplicate of a previously validated request, distance is {distance:.4f}"
         return True, None
 
 

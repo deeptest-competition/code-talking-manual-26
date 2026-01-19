@@ -54,14 +54,14 @@ def wandb_log(results: list[TestResult],
               wandb_entity: str,
               wandb_project: str,
               args: dict):
-    run_name = "_".join([
+    run_name = "--".join([
         args['sut_type'],
-        args['oracle_type'],
         args['sut_llm'] if args['sut_llm'] else "defaultSUTLLM",
+        args['oracle_type'],
         args['oracle_llm'] if args['oracle_llm'] else "defaultOracleLLM",
         args['test_generator'],
         args['manual_name'],
-        str(args['n_tests']) + "tests",
+        str(args['time_limit_seconds']) if args['time_limit_seconds'] else "noTimeLimit",    
         str(args['seed']),
     ])
     with wandb.init(
