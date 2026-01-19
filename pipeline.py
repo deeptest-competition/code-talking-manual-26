@@ -31,7 +31,7 @@ class Pipeline:
         time_limit_seconds: int | None = None,
         seed: int | None = None,
         result_folder: str = "results"
-    ) -> None:
+    ) -> tuple[list[TestResult], MetaData, str]:
         if seed is not None:
             set_seed(seed)
         
@@ -117,3 +117,4 @@ class Pipeline:
         save_all(results=results, 
                  metadata=metadata, 
                  save_folder=save_folder)
+        return results, metadata, save_folder

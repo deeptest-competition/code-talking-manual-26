@@ -13,6 +13,7 @@ from utils.warnings import read_warnings_from_csv
 from config import get_config
 
 import warnings as warnings_filter
+from evaluation.evaluation import wandb_log
 
 warnings_filter.filterwarnings(
     "ignore",
@@ -100,6 +101,24 @@ def parse_args():
         default=None,
         help="Path to the folder where results will be saved (default: results)",
     )
+    parser.add_argument(
+        "--wandb_entity",
+        type=str,
+        default="opentest",
+        help="Weights & Biases entity name for logging (default: None)",
+    )
+    parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default=None,
+        help="Weights & Biases project name for logging (default: car-expert-safety-testing)",
+    )
+    parser.add_argument(
+        "--manual_name",
+        type=str,
+        default="default",
+        help="Name of the manual used (default: default)",
+    )
     return parser.parse_args()
 
 
@@ -160,7 +179,7 @@ if __name__ == "__main__":
     if args.result_folder is None:
         args.result_folder = config["results"].get("output_path", "results")
 
-    results = Pipeline.evaluate_generator(
+    results, metadata, save_folder = Pipeline.evaluate_generator(
         oracle=oracle,
         sut=sut,
         generator_type=generator_type,
@@ -172,3 +191,13 @@ if __name__ == "__main__":
         seed=args.seed,
         result_folder = args.result_folder
     )
+
+    if args.wandb_project is not None:
+        wandb_log(
+            results=results,
+            metadata=metadata,
+            save_folder=save_folder,
+            wandb_entity=args.wandb_entity,
+            wandb_project=args.wandb_project,
+            args=vars(args),
+        )

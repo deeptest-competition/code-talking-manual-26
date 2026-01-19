@@ -20,6 +20,7 @@ for SEED in "${SEEDS[@]}"; do
       --oracle_llm "gpt-4o-mini" \
       --generator_llm "gpt-4o-mini" \
       --seed ${SEED} \
+      --wandb_project "competition-test" \
       --result_folder "${BASE_RESULTS}/${SEED}/${TOOL}" &
   done
 done

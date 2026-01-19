@@ -12,3 +12,4 @@ pyenchant
 streamlit
 plotly
 kaleido
+wandb
