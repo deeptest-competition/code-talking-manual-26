@@ -116,8 +116,8 @@ def parse_args():
     parser.add_argument(
         "--manual_name",
         type=str,
-        default="default",
-        help="Name of the manual used (default: default)",
+        required=True,
+        help="Alias of the manual used. Provide it so that it can be logged in wandb.",
     )
     return parser.parse_args()
 
