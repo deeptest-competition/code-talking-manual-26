@@ -7,3 +7,7 @@ test_bricksllm*
 results/**
 result**
 results**
+wandb/**
+wandb_download/**
+wandb_results/**
+wandb_competition/**
