@@ -1,5 +1,6 @@
 import argparse
 import json
+import wandb
 
 from llm.llms import LLMType
 from oracle import SimpleJudge
@@ -13,7 +14,7 @@ from utils.warnings import read_warnings_from_csv
 from config import get_config
 
 import warnings as warnings_filter
-from evaluation.evaluation import wandb_log
+from evaluation.evaluation import wandb_log, get_run_name
 
 warnings_filter.filterwarnings(
     "ignore",
@@ -124,6 +125,12 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+
+    run_name = get_run_name(vars(args))
+    wandb_api = wandb.Api()
+    runs = wandb_api.runs(path=f"{args.wandb_entity}/{args.wandb_project}", filters={"display_name": run_name})
+    if len(runs) > 0:
+        exit(0)
 
     documents = load_manuals_from_directory(args.manual_path)
     warnings = read_warnings_from_csv(args.warnings_csv)

@@ -48,13 +48,9 @@ def save_all(
                                 })
     
 
-def wandb_log(results: list[TestResult],
-              metadata: MetaData,
-              save_folder: str,
-              wandb_entity: str,
-              wandb_project: str,
-              args: dict):
-    run_name = "--".join([
+
+def get_run_name(args: dict) -> str:
+    return "--".join([
         args['sut_type'],
         args['sut_llm'] if args['sut_llm'] else "defaultSUTLLM",
         args['oracle_type'],
@@ -64,6 +60,15 @@ def wandb_log(results: list[TestResult],
         str(args['time_limit_seconds']) if args['time_limit_seconds'] else "noTimeLimit",    
         str(args['seed']),
     ])
+    
+
+def wandb_log(results: list[TestResult],
+              metadata: MetaData,
+              save_folder: str,
+              wandb_entity: str,
+              wandb_project: str,
+              args: dict):
+    run_name = get_run_name(args)
     with wandb.init(
         entity=wandb_entity,
         project=wandb_project,

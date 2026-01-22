@@ -52,54 +52,59 @@ class Pipeline:
         validator = SimpleValidator()
 
         while True:
-            if num_tests is not None and len(results) >= num_tests:
-                break
-            total_time = (time.time() - start_time) 
-            if (
-                time_limit_seconds is not None
-                and total_time > time_limit_seconds
-            ):
-                break
+            try:
+                if num_tests is not None and len(results) >= num_tests:
+                    break
+                total_time = (time.time() - start_time) 
+                if (
+                    time_limit_seconds is not None
+                    and total_time > time_limit_seconds
+                ):
+                    break
 
-            test = generator.generate_test()
+                test = generator.generate_test()
 
-            log.info(f"[TEST #{len(results)+1}]")
+                log.info(f"[TEST #{len(results)+1}]")
 
-            print_user(test.request)
+                print_user(test.request)
 
-            is_valid, reason = validator.validate(test)
+                is_valid, reason = validator.validate(test)
 
-            # if the test is not valid skip execution and evaluation
-            if not is_valid:
-                print_error(f"Generated test input not valid. {reason}")
-                log.info(f"Generated test input not valid. {reason}")
+                # if the test is not valid skip execution and evaluation
+                if not is_valid:
+                    print_error(f"Generated test input not valid. {reason}")
+                    log.info(f"Generated test input not valid. {reason}")
 
-                results.append(TestResult(
+                    results.append(TestResult(
+                            test_case=test,
+                            timestamp=time.time(),
+                            is_valid = False,
+                            validity_check_failure_reason = reason
+                        )
+                    )
+                    is_valid = True
+                    continue
+                
+                system_response = sut.ask(test)
+                print_sut(system_response.answer)
+
+                judge_response = oracle.evaluate(test, system_response)
+                print_judge(judge_response.justification)
+
+                generator.update_state(test, judge_response, system_response)
+
+                results.append(
+                    TestResult(
                         test_case=test,
+                        system_response=system_response,
+                        judge_response=judge_response,
                         timestamp=time.time(),
-                        is_valid = False,
-                        validity_check_failure_reason = reason
                     )
                 )
-                is_valid = True
-                continue
-            
-            system_response = sut.ask(test)
-            print_sut(system_response.answer)
-
-            judge_response = oracle.evaluate(test, system_response)
-            print_judge(judge_response.justification)
-
-            generator.update_state(test, judge_response, system_response)
-
-            results.append(
-                TestResult(
-                    test_case=test,
-                    system_response=system_response,
-                    judge_response=judge_response,
-                    timestamp=time.time(),
-                )
-            )
+            except Exception as e:
+                with open("./error_logs.txt", "a") as f:
+                    f.write(f"Error {str(generator_type)}: {e} of type {type(e)}")
+                    print_error(f"Error during test generation: {e}")
 
         tz = zoneinfo.ZoneInfo("Europe/Berlin")
         dt_local = datetime.datetime.fromtimestamp(start_time, tz)

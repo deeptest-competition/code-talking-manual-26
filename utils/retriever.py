@@ -32,6 +32,8 @@ class Retriever:
         self, manual_path: str, embedding_type: str = "local"
     ):
         self.manual_path = manual_path
+        self.emb_path = os.path.join(manual_path, self.emb_path)
+        self.index_path = os.path.join(manual_path, self.index_path)
         self.embedding_fnc = get_embedding_func(embedding_type)
 
         chunks, texts, metadata = load_chunks_from_directory(manual_path)
