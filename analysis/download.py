@@ -36,9 +36,19 @@ def filter_runs(runs: List[Run], after: datetime = None) -> List[Run]:
 
     return res
 
+# def get_sut(project: str, run, tags: dict) -> str: 
+#     sut_name = "_".join([tags["sut_type"], tags["sut_llm"], tags["manual_name"]])
+#     return sut_name
+
 def get_sut(project: str, run, tags: dict) -> str: 
-    sut_name = "_".join([tags["sut_type"], tags["sut_llm"], tags["manual_name"]])
-    return sut_name
+    parts = run.name.split("--")
+    if len(parts) != 8:
+        raise ValueError("Invalid SUT string format")
+
+    A = "--".join(parts[:2])
+    B = parts[5]
+    print(f"{A}--{B}")
+    return f"{A}--{B}"
 
 def download_run_artifacts_relative(
     wb_project_path: str,
