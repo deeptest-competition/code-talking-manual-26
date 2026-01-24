@@ -109,7 +109,7 @@ def get_real_tests(path_name:str) -> Tuple[int,int]:
 
 def get_embeddings(
     artifact_directory_path: str,
-    local: bool = True,
+    local: bool = False,
     input: bool = True
 ) -> Tuple[List[str], np.ndarray]:
     """
