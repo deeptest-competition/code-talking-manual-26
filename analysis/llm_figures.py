@@ -13,6 +13,7 @@ import seaborn as sns
 from llm.utils.embeddings_local import get_embedding as get_embedding_local
 from llm.utils.embeddings_openai import get_embedding as get_embedding_openai
 from analysis.models import Utterance
+from tqdm import tqdm
 
 def filter_safety(runs):
     res = []
@@ -56,7 +57,7 @@ def convert_name(run_name: str) -> str:
     #             sut_parts.append(kwd)
     
     # return "_".join(sut_parts) if sut_parts else "unknown_sut"
-    return run_name.replace("_"," ").title()
+    return run_name.replace("_"," ").lower().replace("real","advanced").replace("initial","manual1").replace("mini","manual2")
 
 metric_names = {
     "failures": "Number of Failures",
@@ -100,10 +101,75 @@ def get_real_tests(path_name:str) -> Tuple[int,int]:
 
     num_failures = int(get_summary(path_name)["num_failures"]) 
     total_tests = int(get_summary(path_name)["total_tests"])
+    num_warnings_violated = int(get_summary(path_name)["num_warnings_violated"])
 
     # print(f"num_real_tests: {num_real_tests}")
     # print(f"num_real_fail: {num_real_fail}")
-    return total_tests, num_failures
+    return total_tests, num_failures, num_warnings_violated
+
+def get_embeddings(
+    artifact_directory_path: str,
+    local: bool = True,
+    input: bool = True
+) -> Tuple[List[str], np.ndarray]:
+    """
+    Extract embeddings for 'request' or 'answer' fields from evaluated_tests.json.
+
+    :param artifact_directory_path: Path to experiment folder containing evaluated_tests.json
+    :param local: Use local embedding function if True, else OpenAI API
+    :param input: If True, embed 'request' field; else embed 'answer' field
+    :return: Tuple of list of texts and np.ndarray of embeddings
+    """
+    file_name = "request_embeddings.pkl" if input else "answer_embeddings.pkl"
+    pickle_path = os.path.join(artifact_directory_path, file_name)
+
+    if os.path.exists(pickle_path):
+        with open(pickle_path, "rb") as f:
+            return pickle.load(f)
+
+    json_path = os.path.join(artifact_directory_path, "evaluated_tests.json")
+    if not os.path.exists(json_path):
+        raise FileNotFoundError(f"{json_path} does not exist")
+
+    # Load JSON
+    with open(json_path, "r", encoding="utf8") as f:
+        data = json.load(f)
+
+    # Extract texts
+    texts = []
+    for item in data:
+        if not item.get("is_valid", True):
+            continue
+
+        if input:
+            # Use request field
+            request = item.get("test_case", {}).get("request", None)
+            if request:
+                texts.append(request)
+        else:
+            # Use answer field
+            answer = item.get("system_response", {}).get("answer", None)
+            if answer:
+                texts.append(answer)
+    if len(texts) == 0:
+        raise ValueError(f"No valid texts found in {json_path} for input={input}")
+
+    # Select embedding function
+    get_embedding = get_embedding_local if local else get_embedding_openai
+
+    # Compute embeddings
+    embeddings = []
+    for text in tqdm(texts, desc="Computing embeddings"):
+        emb = np.array(get_embedding(text)).reshape(1, -1)
+        embeddings.append(emb)
+
+    embeddings = np.concatenate(embeddings, axis=0)  # shape: [num_texts, embedding_dim]    embeddings = np.concatenate(embeddings, axis=0)  # shape: [num_texts, embedding_dim]
+
+    # Cache results
+    with open(pickle_path, "wb") as f:
+        pickle.dump((texts, embeddings), f)
+
+    return texts, embeddings
 
 
 def get_run_history_table(run_path: str, freq: str = "1min", th_content = None, th_response = None):
@@ -177,6 +243,7 @@ def diversity_report(
     cached_embeddings = dict()
     suts = []
     result = {}
+    print("output_path:", output_path)
     if os.path.exists(os.path.join(output_path, "report.json")):
         with open(os.path.join(output_path, "report.json"), "r") as f:
             result = json.load(f)
@@ -668,11 +735,24 @@ def plot_boxplots_by_algorithm_raw(
             if metric == "failures":
                 for path in paths:
                     values.append(get_real_tests(path)[1])  # number of failures
+            elif metric == "num_warnings_violated":
+                for path in paths:
+                    values.append(get_real_tests(path)[2])  # number of failures
             elif metric == "critical_ratio":
                 for path in paths:
-                    num_real_tests, num_real_fail = get_real_tests(path)
+                    num_real_tests, num_real_fail,_ = get_real_tests(path)
                     ratio = num_real_fail / num_real_tests if num_real_tests > 0 else 0.0
                     values.append(ratio)
+            # elif metric in ("coverage", "entropy"):
+            #     import json
+            #     for path in paths:
+            #         with open(path + f"/diversity/input/{sut}/report.json", "r") as f:
+            #             report = json.load(f)
+            #         # Flatten all seeds for the current SUT
+            #         for seed_data in report.values():
+            #             if sut in seed_data:
+            #                 metric_values = seed_data[sut].get(metric, [])
+            #                 values.extend(metric_values)
             else:
                 raise AnalysisException(f"Unknown metric: {metric}")
 
@@ -683,7 +763,6 @@ def plot_boxplots_by_algorithm_raw(
                     "Algorithm": algo_name,
                     "Value": v
                 })
-
     df = pd.DataFrame(all_data)
     if df.empty:
         raise RuntimeError("No data found to plot boxplots.")
@@ -729,13 +808,13 @@ def plot_boxplots_by_algorithm_raw(
             # order=algo_order
         )
 
-        ax.set_title(convert_name(sut), fontsize=18, weight="bold")  # title = model name
-        ax.set_ylabel(metric.replace("_", " ").capitalize(), fontsize = 15)
+        ax.set_title(convert_name(sut), fontsize=17, weight="bold")  # title = model name
+        ax.set_ylabel(metric.replace("_", " ").capitalize(), fontsize = 14)
         ax.set_xlabel("")  # remove x-axis label
-        ax.tick_params(axis="x", labelsize=15)
-        ax.tick_params(axis="y", labelsize=15)
+        ax.tick_params(axis="x", labelsize=14)
+        ax.tick_params(axis="y", labelsize=14)
         # Style: gray background, white grid, no borders
-        ax.set_facecolor("0.9")
+        ax.set_facecolor("0.8")
         ax.grid(visible=True, which="both", color="white", linestyle="-", linewidth=0.7)
         for spine in ax.spines.values():
             spine.set_visible(False)
@@ -783,10 +862,12 @@ def last_values_table(
             for metric in metrics:
                 if metric == "failures":
                     values = [get_real_tests(path)[1] for path in paths]
+                elif metric == "num_warnings_violated":
+                    values = [get_real_tests(path)[2] for path in paths]
                 elif metric == "critical_ratio":
                     values = []
                     for path in paths:
-                        num_real_tests, num_real_fail = get_real_tests(path)
+                        num_real_tests, num_real_fail, _ = get_real_tests(path)
                         ratio = num_real_fail / num_real_tests if num_real_tests > 0 else 0.0
                         values.append(ratio)
                 else:
@@ -821,6 +902,31 @@ def last_values_table(
         column_format=col_format
     )
     print(f"Summary table exported to LaTeX: {latex_path}")
+
+    normalized_df = summary_df.copy()
+
+    for metric in metrics:
+        mean_col = f"{metric}_mean"
+        # do not normalize critical_ratio
+        if metric == "critical_ratio":
+            continue
+
+        # normalize per SUT
+        for sut in normalized_df["SUT"].unique():
+            mask = normalized_df["SUT"] == sut
+            max_value = normalized_df.loc[mask, mean_col].max()
+
+            if max_value > 0 and not np.isnan(max_value):
+                normalized_df.loc[mask, mean_col] = (
+                    normalized_df.loc[mask, mean_col] / max_value
+                )
+            else:
+                normalized_df.loc[mask, mean_col] = np.nan
+
+    normalized_path = os.path.splitext(save_path)[0] + "_normalized.csv"
+    normalized_df.to_csv(normalized_path, index=False)
+
+    print(f"Normalized summary table saved to: {normalized_path}")
 
 def count_file_paths(nested_dict):
     total = 0
@@ -873,7 +979,7 @@ def diversity_report(
             for algo_name, paths in zip(algo_names, algos.values()):
                 avg_max_distances = []
                 avg_distances = []
-                for path in paths:
+                for path in tqdm(paths, desc=f"Processing embeddings generation"):
                     _, embeddings = get_embeddings(path)
                     cached_embeddings[path] = embeddings
                     avg_max_distances.append(AnalysisDiversity.average_max_distance(embeddings))
@@ -934,7 +1040,7 @@ def diversity_report(
             elif mode == "merged":
                 algo_counts = defaultdict(int)
                 to_cluster = []
-                for algo_name, paths in tqdm.tqdm(zip(algo_names, algos.values())):
+                for algo_name, paths in tqdm(zip(algo_names, algos.values())):
                     for path in paths:
                         embeddings = cached_embeddings[path]
                         algo_counts[algo_name] += embeddings.shape[0]
@@ -999,6 +1105,7 @@ def diversity_report(
 
     data_dict = defaultdict(list)
     suts = list(artifact_paths.keys())
+
     for algorithm in algorithms:
         data_dict["Algorithm"].append(algorithm)
         for sut in suts:
@@ -1014,9 +1121,96 @@ def diversity_report(
                     values = result[sut][algorithm].get(metric, None)
                     mean = np.mean(values) if values is not None else None
                 data_dict[f"{sut}.{metric}"].append(mean)
-    pd.DataFrame(data_dict).to_csv(os.path.join(output_path, "scores.csv"), index=False)
 
-    
+    scores_df = pd.DataFrame(data_dict)
+    scores_df.to_csv(os.path.join(output_path, "scores.csv"), index=False)
+
+    # ----------------------------------
+    # NEW: prepare data for box plots
+    # ----------------------------------
+
+    records = []
+
+    for sut in suts:
+        for algorithm in algorithms:
+            if algorithm not in result[sut]:
+                continue
+            for metric in ["coverage", "entropy"]:
+                values = result[sut][algorithm].get(metric, None)
+                if values is None:
+                    continue
+                for v in values:
+                    records.append({
+                        "SUT": sut,
+                        "Algorithm": algorithm,
+                        "Metric": metric,
+                        "Value": v,
+                    })
+
+    all_data = pd.DataFrame(records)
+
+    df = pd.DataFrame(all_data)
+    if df.empty:
+        raise RuntimeError("No data found to plot boxplots.")
+
+    # ----------------------------------
+    # Style configuration (same as provided)
+    # ----------------------------------
+
+    algo_colors = {
+        "smart": "#1f77b4",
+        "crisp": "#b41fad",
+        "warnless": "#ff7f0e",
+        "exida": "#2ca02c",
+        "atlas": "#999494"
+    }
+
+    # ----------------------------------
+    # Plot one figure per metric
+        # ----------------------------------
+
+    for metric in ["coverage", "entropy"]:
+        metric_df = df[df["Metric"] == metric]
+
+        suts = list(metric_df["SUT"].unique())
+        n_suts = len(suts)
+
+        fig, axes = plt.subplots(1, n_suts, figsize=(5 * n_suts, 5), sharey=True)
+        if n_suts == 1:
+            axes = [axes]
+
+        for ax, sut in zip(axes, suts):
+            sut_df = metric_df[metric_df["SUT"] == sut]
+
+            sns.boxplot(
+                data=sut_df,
+                x="Algorithm",
+                y="Value",
+                palette=algo_colors,
+                ax=ax,
+                width=0.6,
+            )
+
+            ax.set_title(convert_name(sut), fontsize=17, weight="bold")
+            ax.set_ylabel(metric.replace("_", " ").capitalize(), fontsize=14)
+            ax.set_xlabel("")
+            ax.tick_params(axis="x", labelsize=14)
+            ax.tick_params(axis="y", labelsize=14)
+
+            # Style: gray background, white grid, no borders
+            ax.set_facecolor("0.8")
+            ax.grid(visible=True, which="both", color="white", linestyle="-", linewidth=0.7)
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+
+        plt.tight_layout()
+
+        save_path = os.path.join(output_path, f"{metric}_boxplot.pdf")
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=200)
+        print(f"Boxplots saved to: {save_path}")
+        plt.close()
+        
     for metric in [
                 "avg_max_distance",
                 "avg_distance",
