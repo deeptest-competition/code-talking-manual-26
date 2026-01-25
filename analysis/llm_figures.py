@@ -683,7 +683,7 @@ def boxplots(
     }
 
     fig.tight_layout()
-    plt.savefig(file_name)
+    plt.savefig(file_name, format="pdf")
 
     # === Print and save summary statistics ===
     if all_stats:
@@ -821,7 +821,7 @@ def plot_boxplots_by_algorithm_raw(
 
     plt.tight_layout()
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    plt.savefig(save_path, dpi=200)
+    plt.savefig(save_path, dpi=200, format="pdf")
     print(f"Boxplots saved to: {save_path}")
     plt.close()
     
@@ -1207,7 +1207,7 @@ def diversity_report(
 
         save_path = os.path.join(output_path, f"{metric}_boxplot.pdf")
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=200)
+        plt.savefig(save_path, dpi=200, format="pdf")
         print(f"Boxplots saved to: {save_path}")
         plt.close()
         
