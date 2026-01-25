@@ -10,7 +10,7 @@ def aggregate_statistics_boxplots(
     llm_sut="gpt-5-chat",
     manual="initial",
     metrics=None,
-    download_root="wandb_download",
+    download_root="./wandb_download",
     output_dir="wandb_results",
 ):
     if metrics is None:
@@ -26,7 +26,7 @@ def aggregate_statistics_boxplots(
     base_path = os.path.join(download_root, base_dir)
     output_base_dir = os.path.join(output_dir, base_dir)
     os.makedirs(output_base_dir, exist_ok=True)  # create folder for plots/JSON
-
+    print("base_path", base_path)
     # store per-seed metric values and filenames
     data = defaultdict(lambda: defaultdict(list))
     files_used = defaultdict(list)
@@ -114,11 +114,11 @@ def aggregate_statistics_boxplots(
 
 if __name__ == "__main__":
     algos = ["exida", "crisp", "atlas", "warnless", "smart"]
-    seeds = [1, 2, 3, 4, 5, 7]
+    seeds = [1, 2, 3, 4, 5, 6]
     aggregate_statistics_boxplots(
         algos=algos,
         seeds=seeds,
-        sut="real",
-        llm_sut="gpt-5-chat",
-        manual="initial"
+        sut="mock",
+        llm_sut="gpt-4o-mini",
+        manual="mini"
     )

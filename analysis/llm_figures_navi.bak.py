@@ -425,7 +425,6 @@ def diversity_report(
         artifact_paths = download_run_artifacts(f"opentest/{project}", run_filters[project])
     
     print(f"Applying diversity analysis for {len(artifact_paths)} runs.")
-    input()
     cached_embeddings = dict()
     suts = []
     result = {}

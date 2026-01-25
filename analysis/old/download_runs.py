@@ -6,8 +6,8 @@ import traceback
 api = wandb.Api()
 
 seeds = [1, 2, 3, 4, 5, 6, 7]  # list of seeds to iterate over
-sut = "real"
-llm_sut = "gpt-5-chat"
+sut = "mock"
+llm_sut = "gpt-4o-mini"
 llm_gen = "gpt-4o-mini"
 manual = "initial"
 algos = ["exida", "crisp", "atlas", "warnless", "smart"]
