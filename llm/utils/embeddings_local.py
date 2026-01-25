@@ -10,8 +10,9 @@ from config import get_config
 # Load a pre-trained model from Hugging Face (e.g., a BERT-based model)
 model_name = get_config()["embeddings"]["local_model_name"]
 threshold_similarity = get_config()["embeddings"]["similarity_threshold"]
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = SentenceTransformer(model_name)
+model = SentenceTransformer(model_name, device = device)
 
 def is_equal(a, b, threshold = threshold_similarity):
     score = get_similarity(a,b)
@@ -19,6 +20,27 @@ def is_equal(a, b, threshold = threshold_similarity):
 
 def get_embedding(text):
     return model.encode(text)
+
+def get_batch_embeddings(texts, batch_size=16):
+    """
+    Compute embeddings for a list of texts using GPU (if available) in batches.
+
+    :param texts: List of strings to embed
+    :param batch_size: Number of texts to process at once
+    :return: PyTorch tensor of shape [num_texts, embedding_dim]
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Using batch embeddings.")
+    # Load the model on the correct device
+    model_device = model.to(device)  # model is already loaded globally
+    embeddings = model.encode(
+        texts,
+        batch_size=batch_size,
+        convert_to_tensor=True,   # returns PyTorch tensors
+        device=device,
+        show_progress_bar=True
+    )
+    return embeddings
 
 def get_similarity(a,b, scale = False):
     reference_embedding = get_embedding(a).reshape(1, -1)  # Correct reshaping

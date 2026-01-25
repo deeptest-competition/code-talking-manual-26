@@ -10,10 +10,12 @@ from typing import List, Tuple, Literal, Optional, Dict
 import pickle
 import tqdm
 import seaborn as sns
+from llm.utils.embeddings_local import get_batch_embeddings
 from llm.utils.embeddings_local import get_embedding as get_embedding_local
 from llm.utils.embeddings_openai import get_embedding as get_embedding_openai
 from analysis.models import Utterance
 from tqdm import tqdm
+from analysis.config import manual_warnings
 
 def filter_safety(runs):
     res = []
@@ -57,7 +59,7 @@ def convert_name(run_name: str) -> str:
     #             sut_parts.append(kwd)
     
     # return "_".join(sut_parts) if sut_parts else "unknown_sut"
-    return run_name.replace("_"," ").lower().replace("real","advanced").replace("initial","manual1").replace("mini","manual2")
+    return run_name.replace("_"," ").lower().replace("real","advanced").replace("initial","manual1").replace("--mini","--manual2")
 
 metric_names = {
     "failures": "Number of Failures",
@@ -109,8 +111,9 @@ def get_real_tests(path_name:str) -> Tuple[int,int]:
 
 def get_embeddings(
     artifact_directory_path: str,
-    local: bool = False,
-    input: bool = True
+    local: bool = True,
+    input: bool = True,
+    use_cache: bool = False
 ) -> Tuple[List[str], np.ndarray]:
     """
     Extract embeddings for 'request' or 'answer' fields from evaluated_tests.json.
@@ -123,7 +126,8 @@ def get_embeddings(
     file_name = "request_embeddings.pkl" if input else "answer_embeddings.pkl"
     pickle_path = os.path.join(artifact_directory_path, file_name)
 
-    if os.path.exists(pickle_path):
+    if os.path.exists(pickle_path) and use_cache:
+        print("Reading existing embeddings.")
         with open(pickle_path, "rb") as f:
             return pickle.load(f)
 
@@ -155,15 +159,24 @@ def get_embeddings(
         raise ValueError(f"No valid texts found in {json_path} for input={input}")
 
     # Select embedding function
-    get_embedding = get_embedding_local if local else get_embedding_openai
+    
+    if not local:
+        print("Using cloud embeddings.")
+        get_embedding = get_embedding_openai
+        # Compute embeddings
+        # embeddings = []
+        for text in tqdm(texts, desc="Computing embeddings"):
+            emb = np.array(get_embedding(text)).reshape(1, -1)
+            embeddings.append(emb)
 
-    # Compute embeddings
-    embeddings = []
-    for text in tqdm(texts, desc="Computing embeddings"):
-        emb = np.array(get_embedding(text)).reshape(1, -1)
-        embeddings.append(emb)
+        embeddings = np.concatenate(embeddings, axis=0)  # shape: [num_texts, embedding_dim]    embeddings = np.concatenate(embeddings, axis=0)  # shape: [num_texts, embedding_dim]
+    else: 
+        print("Using local embeddings.")
+        # Compute all embeddings in a single batch (GPU if available)
+        embeddings = get_batch_embeddings(texts, batch_size=100)  # batch_size can be 100 or any suitable number
 
-    embeddings = np.concatenate(embeddings, axis=0)  # shape: [num_texts, embedding_dim]    embeddings = np.concatenate(embeddings, axis=0)  # shape: [num_texts, embedding_dim]
+        # Convert to NumPy array if needed (optional)
+        embeddings = embeddings.cpu().numpy()  # o
 
     # Cache results
     with open(pickle_path, "wb") as f:
@@ -211,208 +224,6 @@ def get_run_history_table(run_path: str, freq: str = "1min", th_content = None, 
     df["critical_ratio"] = df.critical_ratio * num_real_fail/all_fail
 
     return df
-
-def diversity_report(
-        algorithms,
-        project="SafeLLM",
-        output_path="diversity",
-        input: bool = True,
-        max_num_clusters = 150,
-        silhouette_threshold = 20,
-        visualize: bool = True,
-        mode: Literal["separated", "merged"] = "separated",
-        num_seeds: Optional[int] = None,
-        local_root: str = None,
-        run_filters = None,
-        save_folder= None
-    ):
-    if mode == "merged" and num_seeds is None:
-        raise AnalysisException("Provide the number of seed in merged mode")
-    output_path = os.path.join(output_path, "input" if input else "output")
-
-
-    if local_root != None:
-        artifact_paths = download_run_artifacts_relative(f"opentest/{project}", 
-                                                         local_root=local_root,
-                                                         filter_runs = run_filters[project])
-    else:
-        artifact_paths = download_run_artifacts(f"opentest/{project}", run_filters[project])
-    
-    print(f"Applying diversity analysis for {len(artifact_paths)} runs.")
-
-    cached_embeddings = dict()
-    suts = []
-    result = {}
-    print("output_path:", output_path)
-    if os.path.exists(os.path.join(output_path, "report.json")):
-        with open(os.path.join(output_path, "report.json"), "r") as f:
-            result = json.load(f)
-    else:
-        for i, (sut, algos) in enumerate(artifact_paths.items()):
-            suts.append(sut)
-            print(sut)
-            result[sut] = dict()
-            algo_names = [get_algo_name(*key) for key in algos.keys()]
-
-            for algo_name, paths in zip(algo_names, algos.values()):
-                avg_max_distances = []
-                avg_distances = []
-                for path in paths:
-                    _, embeddings = get_embeddings(path)
-                    cached_embeddings[path] = embeddings
-                    avg_max_distances.append(AnalysisDiversity.average_max_distance(embeddings))
-                    avg_distances.append(AnalysisDiversity.average_distance(embeddings))
-                result[sut][algo_name] = {
-                    "avg_max_distance": avg_max_distances,
-                    "avg_distance": avg_distances,
-                }
-            for nm in algo_names:
-                result[sut][nm]["coverage"] = []
-                result[sut][nm]["entropy"] = []
-
-            if mode == "separated":
-                original_seeds = min([len(paths) for paths in algos.values()])
-                if num_seeds is None:
-                    num_seeds = original_seeds
-                for seed in range(num_seeds):
-                    algo_counts = dict()
-                    to_cluster = []
-                    for algo_name, paths in zip(algo_names, algos.values()):
-                        embeddings = cached_embeddings[paths[seed % original_seeds]]
-                        algo_counts[algo_name] = embeddings.shape[0]
-                        to_cluster.append(embeddings)
-                    to_cluster = np.concatenate(to_cluster)
-                    max_num_of_clusters = (len(to_cluster) if max_num_clusters is None else max_num_clusters)
-                    clusterer, labels, centers, _ = AnalysisDiversity.cluster_data(
-                        data=to_cluster,
-                        n_clusters_interval=(2, min(to_cluster.shape[0], max_num_of_clusters)),
-                        seed=seed,
-                        silhouette_threshold=silhouette_threshold,
-                    )
-                    coverage, entropy, _ = AnalysisDiversity.compute_coverage_entropy(
-                        labels, centers, algo_names, algo_counts,
-                    )
-                    for nm in coverage:
-                        result[sut][nm]["coverage"].append(coverage[nm])
-                        result[sut][nm]["entropy"].append(entropy[nm])
-                    os.makedirs(os.path.join(output_path, sut), exist_ok=True)
-                    cluster_data = (
-                        to_cluster,
-                        algo_names,
-                        algo_counts,
-                        labels,
-                        centers,
-                        seed,
-                    )
-                    with open(os.path.join(output_path, sut, f"pickled_cluster_data_seed{seed}.pkl"), "wb") as f:
-                        pickle.dump(cluster_data, f)
-                    if visualize:
-                        AnalysisPlots.plot_clusters(
-                            to_cluster,
-                            centers,
-                            os.path.join(output_path, sut, f"clusters_seed{seed}"),
-                            algo_names,
-                            algo_counts,
-                            seed=seed,
-                        )
-            elif mode == "merged":
-                algo_counts = defaultdict(int)
-                to_cluster = []
-                for algo_name, paths in tqdm.tqdm(zip(algo_names, algos.values())):
-                    for path in paths:
-                        embeddings = cached_embeddings[path]
-                        algo_counts[algo_name] += embeddings.shape[0]
-                        to_cluster.append(embeddings)
-                to_cluster = np.concatenate(to_cluster)
-                max_num_of_clusters = (len(to_cluster) if max_num_clusters is None else max_num_clusters)
-                for seed in range(num_seeds):
-                    clusterer, labels, centers, _ = AnalysisDiversity.cluster_data(
-                        data=to_cluster,
-                        n_clusters_interval=(2, min(to_cluster.shape[0], max_num_of_clusters)),
-                        seed=seed,
-                        silhouette_threshold=silhouette_threshold,
-                    )
-                    coverage, entropy, _ = AnalysisDiversity.compute_coverage_entropy(
-                        labels, centers, algo_names, algo_counts,
-                    )
-                    for nm in coverage:
-                        result[sut][nm]["coverage"].append(coverage[nm])
-                        result[sut][nm]["entropy"].append(entropy[nm])
-                    os.makedirs(os.path.join(output_path, sut), exist_ok=True)   
-                    cluster_data = (
-                        to_cluster,
-                        algo_names,
-                        algo_counts,
-                        labels,
-                        centers,
-                        seed,
-                    )
-                    with open(os.path.join(output_path, sut, f"pickled_cluster_data_seed{seed}.pkl"), "wb") as f:
-                        pickle.dump(cluster_data, f)
-                    if visualize:
-                        AnalysisPlots.plot_clusters(
-                            to_cluster,
-                            centers,
-                            os.path.join(output_path, sut, f"clusters_seed{seed}"),
-                            algo_names,
-                            algo_counts,
-                            seed=seed,
-                        )
-            else:
-                raise AnalysisException("Unknown mode")
-            print(result)
-
-        with open(os.path.join(output_path, "report.json"), "w") as f:
-            json.dump(result, f)
-
-    data_dict = defaultdict(list)
-    suts = list(artifact_paths.keys())
-    for algorithm in algorithms:
-        data_dict["Algorithm"].append(algorithm)
-        for sut in suts:
-            for metric in [
-                "avg_max_distance",
-                "avg_distance",
-                "coverage",
-                "entropy",
-            ]:
-                if algorithm not in result[sut]:
-                    mean = None
-                else:
-                    values = result[sut][algorithm].get(metric, None)
-                    mean = np.mean(values) if values is not None else None
-                data_dict[f"{sut}.{metric}"].append(mean)
-    pd.DataFrame(data_dict).to_csv(os.path.join(output_path, "scores.csv"), index=False)
-
-    
-    for metric in [
-                "avg_max_distance",
-                "avg_distance",
-                "coverage",
-                "entropy",
-            ]:
-        statistics = {}
-        for sut in suts:
-            algo_names = list(result[sut].keys())
-            values = [result[sut][algo][metric] for algo in algo_names]
-            statistics[sut] = AnalysisTables.statistics(values, algo_names)
-        data_dict = defaultdict(list)
-        for i in range(len(algorithms)):
-            for j in range(i + 1, len(algorithms)):
-                data_dict["Algorithm 1"].append(algorithms[i])
-                data_dict["Algorithm 2"].append(algorithms[j])
-                for sut in suts:
-                    stats = statistics[sut][algorithms[i]][algorithms[j]]
-                    if len(stats) > 0:
-                        data_dict[f"{sut.capitalize()}.P-Value"].append(stats[0])
-                        data_dict[f"{sut.capitalize()}.Effect Size"].append(stats[1])
-                    else:
-                        data_dict[f"{sut.capitalize()}.P-Value"].append(None)
-                        data_dict[f"{sut.capitalize()}.Effect Size"].append(None)
-        df = pd.DataFrame(data_dict)
-        df = df.dropna()
-        df.to_csv(os.path.join(output_path, save_folder, f"{metric}_stats.csv"), index=False)        
-    return result
 
 def get_summary(artifact_directory_path: str):
     json_path = os.path.join(artifact_directory_path, "evaluation_summary.json")
@@ -584,7 +395,7 @@ def boxplots_multi_threshold(
             print(pivot.to_string(index=False))
 
             # Save to CSV
-            csv_path = file_name.replace(".png", f"_{sut}_{metric}_summary.csv")
+            csv_path = file_name.replace(".pdf", f"_{sut}_{metric}_summary.csv")
             pivot.to_csv(csv_path, index=False)
             print(f"Saved: {csv_path}")
             
@@ -700,7 +511,7 @@ def boxplots(
                     f"std = {row['std']:.4f}, median = {row['median']:.4f} (n={int(row['count'])})"
                 )
 
-        stats_path = file_name.replace(".png", "_stats.csv")
+        stats_path = file_name.replace(".pdf", "_stats.csv")
         stats_df.to_csv(stats_path, index=False)
         print(f"\nStatistics saved to: {stats_path}")
     
@@ -710,7 +521,7 @@ def plot_boxplots_by_algorithm_raw(
     run_filters=None,
     one_per_name: bool = False,
     experiments_folder: str = "wandb_download",
-    save_path: str = "plots/boxplots_raw.png"
+    save_path: str = "plots/boxplots_raw.pdf"
 ):
     """
     Create boxplots of raw run values for each algorithm (one subplot per algorithm).
@@ -780,14 +591,13 @@ def plot_boxplots_by_algorithm_raw(
     n_suts = len(suts)
 
     # # Define the desired full order
-    # full_order = ["STELLAR", "T-wise", "Random"]
+    full_order = ["atlas", "crisp", "exida", "smart", "warnless"]
 
-    # # Keep only the algorithms present in the dataset
-    # algo_order = [algo for algo in full_order if algo in df["Algorithm"].unique()]
-    # algo_order = full_order
+    # Keep only the algorithms present in the dataset
+    algo_order = [algo for algo in full_order if algo in df["Algorithm"].unique()]
+    algo_order = full_order
 
-    # Ensure the column is categorical with this order
-    # df["Algorithm"] = pd.Categorical(df["Algorithm"], categories=algo_order, ordered=True)
+    df["Algorithm"] = pd.Categorical(df["Algorithm"], categories=algo_order, ordered=True)
 
     # Create one subplot per SUT
     fig, axes = plt.subplots(1, n_suts, figsize=(5 * n_suts, 5), sharey=True)
@@ -798,6 +608,15 @@ def plot_boxplots_by_algorithm_raw(
     for ax, sut in zip(axes, suts):
         sut_df = df[df["SUT"] == sut]
 
+        algo_map = {
+            "crisp": "CRISP",
+            "exida": "Exida",
+            "atlas" : "ATLAS",
+            "smart" : "Random",
+            "warnless" : "Warnless"
+            # add others as needed
+        }
+
         sns.boxplot(
             data=sut_df,
             x="Algorithm",
@@ -805,16 +624,19 @@ def plot_boxplots_by_algorithm_raw(
             palette=algo_colors,
             ax=ax,
             width=0.6,
-            # order=algo_order
         )
 
-        ax.set_title(convert_name(sut), fontsize=17, weight="bold")  # title = model name
-        ax.set_ylabel(metric.replace("_", " ").capitalize(), fontsize = 14)
+        ax.set_xticklabels(
+            [algo_map.get(t.get_text(), t.get_text()) for t in ax.get_xticklabels()]
+        )
+
+        ax.set_title(convert_name(sut), fontsize=16)  # title = model name
+        ax.set_ylabel(metric.replace("_", " ").title(), fontsize=12)
         ax.set_xlabel("")  # remove x-axis label
-        ax.tick_params(axis="x", labelsize=14)
-        ax.tick_params(axis="y", labelsize=14)
+        ax.tick_params(axis="x", labelsize=12)
+        ax.tick_params(axis="y", labelsize=12)
         # Style: gray background, white grid, no borders
-        ax.set_facecolor("0.8")
+        ax.set_facecolor("0.9")
         ax.grid(visible=True, which="both", color="white", linestyle="-", linewidth=0.7)
         for spine in ax.spines.values():
             spine.set_visible(False)
@@ -910,11 +732,18 @@ def last_values_table(
         # do not normalize critical_ratio
         if metric == "critical_ratio":
             continue
+        
 
         # normalize per SUT
         for sut in normalized_df["SUT"].unique():
             mask = normalized_df["SUT"] == sut
-            max_value = normalized_df.loc[mask, mean_col].max()
+            if metric == "num_warnings_violated":
+                manual = sut.split("--")[-1]
+                print("manual extracted", manual)
+                max_value = manual_warnings[manual]
+                print("max_value", max_value) 
+            else:
+                max_value = normalized_df.loc[mask, mean_col].max()
 
             if max_value > 0 and not np.isnan(max_value):
                 normalized_df.loc[mask, mean_col] = (
@@ -981,6 +810,7 @@ def diversity_report(
                 avg_distances = []
                 for path in tqdm(paths, desc=f"Processing embeddings generation"):
                     _, embeddings = get_embeddings(path)
+                    print("shape embeddings", embeddings.shape)
                     cached_embeddings[path] = embeddings
                     avg_max_distances.append(AnalysisDiversity.average_max_distance(embeddings))
                     avg_distances.append(AnalysisDiversity.average_distance(embeddings))
@@ -1168,6 +998,14 @@ def diversity_report(
     # ----------------------------------
     # Plot one figure per metric
         # ----------------------------------
+    # # Define the desired full order
+    full_order = ["atlas", "crisp", "exida", "smart", "warnless"]
+
+    # Keep only the algorithms present in the dataset
+    algo_order = [algo for algo in full_order if algo in df["Algorithm"].unique()]
+    algo_order = full_order
+
+    df["Algorithm"] = pd.Categorical(df["Algorithm"], categories=algo_order, ordered=True)
 
     for metric in ["coverage", "entropy"]:
         metric_df = df[df["Metric"] == metric]
@@ -1181,7 +1019,15 @@ def diversity_report(
 
         for ax, sut in zip(axes, suts):
             sut_df = metric_df[metric_df["SUT"] == sut]
-
+            algo_map = {
+                    "crisp": "CRISP",
+                    "exida": "Exida",
+                    "atlas" : "ATLAS",
+                    "smart" : "Random",
+                    "warnless" : "Warnless"
+                    # add others as needed
+                }
+            
             sns.boxplot(
                 data=sut_df,
                 x="Algorithm",
@@ -1191,14 +1037,18 @@ def diversity_report(
                 width=0.6,
             )
 
-            ax.set_title(convert_name(sut), fontsize=17, weight="bold")
-            ax.set_ylabel(metric.replace("_", " ").capitalize(), fontsize=14)
+            ax.set_xticklabels(
+                [algo_map.get(t.get_text(), t.get_text()) for t in ax.get_xticklabels()]
+            )
+
+            ax.set_title(convert_name(sut), fontsize=16)
+            ax.set_ylabel(metric.replace("_", " ").title(), fontsize=12)
             ax.set_xlabel("")
-            ax.tick_params(axis="x", labelsize=14)
-            ax.tick_params(axis="y", labelsize=14)
+            ax.tick_params(axis="x", labelsize=12)
+            ax.tick_params(axis="y", labelsize=12)
 
             # Style: gray background, white grid, no borders
-            ax.set_facecolor("0.8")
+            ax.set_facecolor("0.9")
             ax.grid(visible=True, which="both", color="white", linestyle="-", linewidth=0.7)
             for spine in ax.spines.values():
                 spine.set_visible(False)

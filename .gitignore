@@ -12,3 +12,5 @@ wandb_download/**
 wandb_results/**
 wandb_competition/**
 wandb_analysis/**
+mini/**
+plots/**

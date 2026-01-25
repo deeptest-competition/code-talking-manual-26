@@ -15,6 +15,7 @@ import tqdm
 import matplotlib.pyplot as plt
 import random
 from collections import Counter
+from joblib import Parallel, delayed
 
 
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -165,7 +166,7 @@ class AnalysisPlots:
             # add center of cluster as a new row
             to_cluster = np.append(to_cluster, c.reshape(1, -1), axis=0)
 
-        for per in [2, 5, 10, 20, 30]:
+        for per in [2, 30]:
             # assuming TSNE
             n_iterations = 5000
             tsne = TSNE(
@@ -277,74 +278,59 @@ class AnalysisDiversity:
     @staticmethod
     def cluster_data(
         data: np.ndarray,
-        n_clusters_interval: Tuple,
+        n_clusters_interval: tuple,
         seed: int,
         silhouette_threshold: int,
-    ) -> Tuple:
+        n_jobs: int = -1,
+    ):
         logger = Log("cluster_data")
-        optimal_n_clusters = 1
-        optimal_score = -1
-        if n_clusters_interval[0] != 1:
-            range_n_clusters = np.arange(n_clusters_interval[0], n_clusters_interval[1])
-            optimal_score = -1
-            optimal_n_clusters = -1
-            for n_clusters in tqdm.tqdm(range_n_clusters):
-                clusterer = KMeans(n_clusters=n_clusters, random_state=seed, n_init="auto")
-                cluster_labels = clusterer.fit_predict(data)
-                try:
-                    silhouette_avg = silhouette_score(
-                        data, cluster_labels, random_state=seed
-                    )
-                    logger.debug(
-                        "For n_clusters = {}, the average silhouette score is: {}".format(
-                            n_clusters, silhouette_avg
-                        )
-                    )
-                    if silhouette_avg > optimal_score:
-                        if silhouette_threshold < 0 or optimal_score == -1:
-                            optimal_score = silhouette_avg
-                            optimal_n_clusters = n_clusters
-                            logger.debug(
-                                "New optimal silhouette score: {}. Num clusters: {}".format(
-                                    silhouette_avg, n_clusters
-                                )
-                            )
-                        else:
-                            assert (
-                                0 < silhouette_threshold <= 100
-                            ), "Silhouette threshold needs to be in (0, 100]. Found {}".format(
-                                silhouette_threshold
-                            )
-                            percentage_increase = round(
-                                100 * (silhouette_avg - optimal_score) / optimal_score, 2
-                            )
-                            if percentage_increase >= silhouette_threshold:
-                                optimal_score = silhouette_avg
-                                optimal_n_clusters = n_clusters
-                                logger.debug(
-                                    "New optimal silhouette score: {} > {}% of previous score {}. Num clusters: {}".format(
-                                        silhouette_avg,
-                                        silhouette_threshold,
-                                        percentage_increase,
-                                        n_clusters,
-                                    )
-                                )
-                except ValueError:
-                    logger.warn("Clustering ValueError exception")
-                    break
 
-            assert optimal_n_clusters != -1, "Error in silhouette analysis"
-            logger.debug(
-                "Best score is {} for n_cluster = {}".format(
-                    optimal_score, optimal_n_clusters
-                )
+        min_k, max_k = n_clusters_interval
+        optimal_n_clusters = 1
+        optimal_score = -1.0
+
+        def evaluate_k(n_clusters):
+            clusterer = KMeans(
+                n_clusters=n_clusters,
+                random_state=seed,
+                n_init="auto",
+            )
+            labels = clusterer.fit_predict(data)
+            score = silhouette_score(data, labels)
+            return n_clusters, score
+
+        if min_k != 1:
+            results = Parallel(n_jobs=n_jobs)(
+                delayed(evaluate_k)(k)
+                for k in tqdm.tqdm(range(min_k, max_k))
             )
 
-        clusterer = KMeans(n_clusters=optimal_n_clusters, n_init="auto").fit(data)
-        labels = clusterer.labels_
-        centers = clusterer.cluster_centers_
-        return clusterer, labels, centers, optimal_score
-    
+            for n_clusters, silhouette_avg in results:
+                if silhouette_avg > optimal_score:
+                    if silhouette_threshold < 0 or optimal_score < 0:
+                        optimal_score = silhouette_avg
+                        optimal_n_clusters = n_clusters
+                    else:
+                        percentage_increase = (
+                            100 * (silhouette_avg - optimal_score) / optimal_score
+                        )
+                        if percentage_increase >= silhouette_threshold:
+                            optimal_score = silhouette_avg
+                            optimal_n_clusters = n_clusters
+
+        clusterer = KMeans(
+            n_clusters=optimal_n_clusters,
+            random_state=seed,
+            n_init="auto",
+        ).fit(data)
+
+        return (
+            clusterer,
+            clusterer.labels_,
+            clusterer.cluster_centers_,
+            optimal_score,
+        )
+
     @staticmethod
     def compute_coverage_entropy(
         labels,
