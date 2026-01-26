@@ -626,22 +626,27 @@ def plot_boxplots_by_algorithm_raw(
             width=0.6,
         )
 
-        ax.set_xticklabels(
-            [algo_map.get(t.get_text(), t.get_text()) for t in ax.get_xticklabels()]
+       ax.set_xticklabels(
+            [algo_map.get(t.get_text(), t.get_text()) for t in ax.get_xticklabels()],
+            rotation=45,   # steeper angle
+            ha="right",
+            fontsize=18    # smaller font
         )
-
-        ax.set_title(convert_name(sut), fontsize=16)  # title = model name
-        ax.set_ylabel(metric.replace("_", " ").title(), fontsize=12)
+        # Optional: fine-tune horizontal position
+        # Shift labels to the right in axis coordinates
+     
+        # ax.set_title(convert_name(sut), fontsize=16)  # title = model name
+        ax.set_ylabel(metric.replace("_", " ").title(), fontsize=18)
         ax.set_xlabel("")  # remove x-axis label
-        ax.tick_params(axis="x", labelsize=12)
-        ax.tick_params(axis="y", labelsize=12)
+        ax.tick_params(axis="x", labelsize=16)
+        ax.tick_params(axis="y", labelsize=18)
         # Style: gray background, white grid, no borders
         ax.set_facecolor("0.9")
         ax.grid(visible=True, which="both", color="white", linestyle="-", linewidth=0.7)
         for spine in ax.spines.values():
             spine.set_visible(False)
-
-    plt.tight_layout()
+        
+    plt.tight_layout(pad=0.5)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=200, format="pdf")
     print(f"Boxplots saved to: {save_path}")
@@ -1040,22 +1045,26 @@ def diversity_report(
             )
 
             ax.set_xticklabels(
-                [algo_map.get(t.get_text(), t.get_text()) for t in ax.get_xticklabels()]
+                [algo_map.get(t.get_text(), t.get_text()) for t in ax.get_xticklabels()],
+                rotation=45,   # steeper angle
+                ha="right",
+                fontsize=18    # smaller font
             )
-
-            ax.set_title(convert_name(sut), fontsize=16)
-            ax.set_ylabel(metric.replace("_", " ").title(), fontsize=12)
-            ax.set_xlabel("")
-            ax.tick_params(axis="x", labelsize=12)
-            ax.tick_params(axis="y", labelsize=12)
-
+            # Optional: fine-tune horizontal position
+            # Shift labels to the right in axis coordinates
+        
+            # ax.set_title(convert_name(sut), fontsize=16)  # title = model name
+            ax.set_ylabel(metric.replace("_", " ").title(), fontsize=18)
+            ax.set_xlabel("")  # remove x-axis label
+            ax.tick_params(axis="x", labelsize=16)
+            ax.tick_params(axis="y", labelsize=18)
             # Style: gray background, white grid, no borders
             ax.set_facecolor("0.9")
             ax.grid(visible=True, which="both", color="white", linestyle="-", linewidth=0.7)
             for spine in ax.spines.values():
                 spine.set_visible(False)
-
-        plt.tight_layout()
+            
+        plt.tight_layout(pad=0.5)
 
         save_path = os.path.join(output_path, f"{metric}_boxplot.pdf")
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
