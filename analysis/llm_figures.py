@@ -626,7 +626,7 @@ def plot_boxplots_by_algorithm_raw(
             width=0.6,
         )
 
-       ax.set_xticklabels(
+        ax.set_xticklabels(
             [algo_map.get(t.get_text(), t.get_text()) for t in ax.get_xticklabels()],
             rotation=45,   # steeper angle
             ha="right",
