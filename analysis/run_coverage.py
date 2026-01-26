@@ -71,35 +71,6 @@ def main() -> None:
 
             run_filters = {"competition": filter_runs}
 
-            last_values_table(
-                project,
-                ["critical_ratio", "failures", "num_warnings_violated"],
-                run_filters=run_filters,
-                path=f"./wandb_analysis/{sut_manual}/last_values.csv",
-                one_per_name=one_per_name,
-                experiments_folder=experiments_folder,
-            )
-
-            statistics_table(
-                algorithms,
-                project,
-                "failures",
-                run_filters=run_filters,
-                path=f"./wandb_analysis/{sut_manual}/statistics.csv",
-                one_per_name=one_per_name,
-                experiments_folder=experiments_folder,
-            )
-
-            for metric in ["failures", "critical_ratio", "num_warnings_violated"]:
-                plot_boxplots_by_algorithm_raw(
-                    project,
-                    metric=metric,
-                    run_filters=run_filters,
-                    save_path=f"./wandb_analysis/{sut_manual}/{metric}_boxplots.pdf",
-                    one_per_name=one_per_name,
-                    experiments_folder=experiments_folder,
-                )
-
             if args.do_coverage:
                 diversity_report(
                     algorithms,

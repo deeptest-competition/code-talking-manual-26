@@ -113,7 +113,7 @@ def get_embeddings(
     artifact_directory_path: str,
     local: bool = True,
     input: bool = True,
-    use_cache: bool = False
+    use_cache: bool = True
 ) -> Tuple[List[str], np.ndarray]:
     """
     Extract embeddings for 'request' or 'answer' fields from evaluated_tests.json.
@@ -835,6 +835,7 @@ def diversity_report(
                         to_cluster.append(embeddings)
                     to_cluster = np.concatenate(to_cluster)
                     max_num_of_clusters = (len(to_cluster) if max_num_clusters is None else max_num_clusters)
+                    print("Clustering data for seed:", seed)
                     clusterer, labels, centers, _ = AnalysisDiversity.cluster_data(
                         data=to_cluster,
                         n_clusters_interval=(2, min(to_cluster.shape[0], max_num_of_clusters)),
@@ -882,6 +883,7 @@ def diversity_report(
                     
                     
                     if os.path.exists(pickled_data_path):
+                        print("Loading pickled data.")
                         with open(pickled_data_path, "rb") as f:
                             content = pickle.load(f)
                             (
@@ -910,7 +912,7 @@ def diversity_report(
                         )
                         with open(pickled_data_path, "wb") as f:
                             pickle.dump(cluster_data, f)
-
+                    print("Computing Coverage and Entropy.")
                     coverage, entropy, _ = AnalysisDiversity.compute_coverage_entropy(
                         labels, centers, algo_names, algo_counts,
                     )

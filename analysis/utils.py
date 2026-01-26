@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import random
 from collections import Counter
 from joblib import Parallel, delayed
-
+import torch
 
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
@@ -290,6 +290,7 @@ class AnalysisDiversity:
         optimal_score = -1.0
 
         def evaluate_k(n_clusters):
+            print("Applying clustering for k = ",n_clusters)
             clusterer = KMeans(
                 n_clusters=n_clusters,
                 random_state=seed,
@@ -330,134 +331,96 @@ class AnalysisDiversity:
             clusterer.cluster_centers_,
             optimal_score,
         )
-
-    @staticmethod
-    def compute_coverage_entropy(
-        labels,
-        centers,
-        names,
-        env_configurations_names,
-    ):
-        coverage_names = dict()
-        entropy_names = dict()
-        logger = Log("coverage_entropy")
-        num_clusters = len(centers)
-        coverage_set_names = dict()
-        number_points_names = dict()
-        name_idx = 0
-        count_labels = 0
-        for label in labels:
-            if count_labels > env_configurations_names[names[name_idx]] - 1:
-                count_labels = 0
-                name_idx += 1
-
-            nm = names[name_idx]
-            if nm not in coverage_set_names:
-                coverage_set_names[nm] = set()
-            coverage_set_names[nm].add(label)
-
-            if nm not in number_points_names:
-                number_points_names[nm] = []
-            number_points_names[nm].append(label)
-
-            count_labels += 1
-
-        for nm, ls in number_points_names.items():
-            assert len(ls) ==  env_configurations_names[nm] , "Number of labels {} != Number of failures: {} for {}".format(
-                len(ls), env_configurations_names[nm], nm
-            )
-
-        logger.info("Number of clusters: {}".format(len(centers)))
-        ideal_entropy = np.log2(len(centers))
-        num_classes = len(env_configurations_names)
-        logger.info(f"Num classes: {num_classes}")
-
-        gini_dict = dict()
-        counter_labels = Counter(labels)
-
-        for nm, set_clusters in coverage_set_names.items():
-
-            # TODO: computing gini coefficient only if with two classes for now
-            if len(set_clusters) > 0 and num_classes == 2:
-                number_points_name_array = np.asarray(number_points_names[nm])
-                gini_dict[nm] = [
-                    len(
-                        number_points_name_array[
-                            number_points_name_array == cluster_label
-                        ]
-                    )
-                    / counter_labels[cluster_label]
-                    for cluster_label in counter_labels
-                ]
-
-            coverage = 100 * len(set_clusters) / len(centers)
-            coverage_names[nm] = coverage
-            logger.info("Coverage for method {}: {}%".format(nm, coverage))
-            counter = Counter(number_points_names[nm])
-            distribution = [
-                round(
-                    100
-                    * number_of_points_in_cluster
-                    / env_configurations_names[nm],
-                    2,
-                )
-                for number_of_points_in_cluster in counter.values()
-            ]
-
-            logger.info(
-                "Distribution across clusters for method {}: {}".format(
-                    nm, distribution
-                )
-            )
-            entropy_names[nm] = 0.0
-            if len(set_clusters) > 0:
-                frequency_list = [
-                    number_of_points_in_cluster / env_configurations_names[nm]
-                    for number_of_points_in_cluster in counter.values()
-                ]
-
-                entropy = 0.0
-                for freq in frequency_list:
-                    entropy += freq * np.log2(freq)
-                if not math.isclose(entropy, 0.0):
-                    entropy *= -1
-                logger.info("Entropy: {}, Ideal: {}".format(entropy, ideal_entropy))
-                entropy = round(100 * entropy / ideal_entropy, 2)
-                entropy_names[nm] = entropy
-                logger.info("Entropy: {}%".format(entropy))
-
-        # TODO: computing gini coefficient only if with two classes for now
-        if num_classes == 2:
-            same_length = all(
-                len(probabilities) == len(list(gini_dict.values())[0])
-                for probabilities in gini_dict.values()
-            )
-            assert (
-                same_length
-            ), f"All the probability scores are not of the same length: {gini_dict}"
-
-            logger.info(f"Gini impurity coefficient dictionary: {gini_dict}")
-
-            gini_impurity_coeff = 0
-            for i in range(num_clusters):
-
-                if sum([gini_dict[nm][i] for nm in gini_dict.keys()]) != 1.0:
-                    raise RuntimeError(
-                        f"Error in computing the gini coefficient: {gini_dict}"
-                    )
-
-                gini_impurity_coeff += 1 - sum(
-                    [gini_dict[nm][i] ** 2 for nm in gini_dict.keys()]
-                )
-
-            gini_impurity_coeff /= num_clusters
-
-            if gini_impurity_coeff > 1.0:
-                raise RuntimeError(
-                    f"The gini coefficient cannot be > 1.0: {gini_impurity_coeff}"
-                )
-
-            logger.info(f"Gini impurity coefficient: {gini_impurity_coeff}")
-            logger.info(f"Gini purity coefficient: {1 - gini_impurity_coeff}")
         
+    @staticmethod
+    def compute_coverage_entropy(labels, centers, names, env_configurations_names, device='cuda'):
+        """
+        Compute coverage, entropy, and Gini impurity on GPU using PyTorch.
+
+        Args:
+            labels: list or 1D array of cluster labels (integers)
+            centers: list of cluster centers
+            names: list of names corresponding to segments of labels
+            env_configurations_names: dict mapping name -> number of labels
+            device: 'cuda' or 'cpu'
+        Returns:
+            coverage_names: dict of coverage percentage per name
+            entropy_names: dict of entropy percentage per name
+            num_clusters: total number of clusters
+        """
+
+        # ---------------------------
+        # Setup
+        # ---------------------------
+        labels = torch.tensor(labels, device=device, dtype=torch.int64)
+        num_clusters = len(centers)
+        ideal_entropy = math.log2(num_clusters)
+        unique_names = list(env_configurations_names.keys())
+        num_classes = len(unique_names)
+        
+        print(f"Labels tensor device: {labels.device}")
+
+        # Compute slices for each name
+        counts_per_name = torch.tensor([env_configurations_names[n] for n in names], device=device)
+        name_cuts = torch.cumsum(counts_per_name, dim=0)
+
+        # ---------------------------
+        # Prepare storage
+        # ---------------------------
+        coverage_names = {}
+        entropy_names = {}
+        gini_dict = {}
+
+        start_idx = 0
+
+        # Wrap the enumerate(names) with tqdm
+        for idx, nm in enumerate(tqdm.tqdm(names, desc="Computing coverage & entropy")):
+            n_points = env_configurations_names[nm]
+            end_idx = start_idx + n_points
+            points = labels[start_idx:end_idx]
+
+            # ---------------------------
+            # Compute coverage
+            # ---------------------------
+            unique_clusters = torch.unique(points)
+            coverage = 100.0 * unique_clusters.numel() / num_clusters
+            coverage_names[nm] = float(coverage)
+
+            # ---------------------------
+            # Distribution / counts per cluster
+            # ---------------------------
+            counts = torch.bincount(points, minlength=num_clusters)
+            distribution = 100.0 * counts / n_points
+
+            # ---------------------------
+            # Entropy
+            # ---------------------------
+            nonzero_counts = counts[counts > 0].float()
+            freqs = nonzero_counts / n_points
+            entropy = -(freqs * torch.log2(freqs)).sum() if nonzero_counts.numel() > 0 else torch.tensor(0.0, device=device)
+            entropy_percentage = 100.0 * entropy / ideal_entropy if ideal_entropy > 0 else 0.0
+            entropy_names[nm] = float(entropy_percentage)
+
+            # ---------------------------
+            # Gini for two-class case
+            # ---------------------------
+            if num_classes == 2:
+                total_counts = torch.bincount(labels, minlength=num_clusters).float()
+                probs = torch.zeros(num_clusters, device=device)
+                for cluster_label in torch.unique(points):
+                    probs[cluster_label] = (points == cluster_label).sum().float() / total_counts[cluster_label]
+                gini_dict[nm] = probs
+
+            start_idx = end_idx
+
+
+        # ---------------------------
+        # Compute overall Gini impurity
+        # ---------------------------
+        if num_classes == 2 and gini_dict:
+            probs_matrix = torch.stack(list(gini_dict.values()))  # shape: (num_names, num_clusters)
+            if not torch.allclose(probs_matrix.sum(dim=0), torch.tensor(1.0, device=device)):
+                raise RuntimeError(f"Error in computing Gini coefficient: {gini_dict}")
+            gini_impurity_coeff = (1 - (probs_matrix**2).sum(dim=0)).mean().item()
+
         return coverage_names, entropy_names, num_clusters
