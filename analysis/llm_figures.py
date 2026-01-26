@@ -921,10 +921,11 @@ def diversity_report(
                     coverage, entropy, _ = AnalysisDiversity.compute_coverage_entropy(
                         labels, centers, algo_names, algo_counts,
                     )
-                    for nm in coverage:
+                    for nm in tqdm(coverage, desc=f"Processing {sut}"):
                         result[sut][nm]["coverage"].append(coverage[nm])
-                        result[sut][nm]["entropy"].append(entropy[nm])                   
+                        result[sut][nm]["entropy"].append(entropy[nm])           
                     if visualize:
+                        print("Plotting clusters...")
                         AnalysisPlots.plot_clusters(
                             to_cluster,
                             centers,

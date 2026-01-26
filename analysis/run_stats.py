@@ -104,6 +104,7 @@ def main() -> None:
                 diversity_report(
                     algorithms,
                     project,
+                    visualize=False,
                     input=True,
                     local_root=experiments_folder,
                     output_path=f"./wandb_analysis/{sut_manual}/diversity",

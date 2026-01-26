@@ -414,13 +414,29 @@ class AnalysisDiversity:
             start_idx = end_idx
 
 
-        # ---------------------------
-        # Compute overall Gini impurity
-        # ---------------------------
+                # ---------------------------
+                # Compute overall Gini impurity
+                # ---------------------------
         if num_classes == 2 and gini_dict:
-            probs_matrix = torch.stack(list(gini_dict.values()))  # shape: (num_names, num_clusters)
+            # Preallocate list of probabilities for stacking
+            probs_list = []
+
+            # Wrap the iteration over names with tqdm
+            for nm in tqdm(gini_dict.keys(), desc="Computing Gini probabilities"):
+                probs_list.append(gini_dict[nm])
+
+            # Stack into a single tensor
+            probs_matrix = torch.stack(probs_list)  # shape: (num_names, num_clusters)
+
+            # Optional sanity check
             if not torch.allclose(probs_matrix.sum(dim=0), torch.tensor(1.0, device=device)):
                 raise RuntimeError(f"Error in computing Gini coefficient: {gini_dict}")
+
+            # Compute Gini impurity
             gini_impurity_coeff = (1 - (probs_matrix**2).sum(dim=0)).mean().item()
+            gini_purity_coeff = 1 - gini_impurity_coeff
+
+            print(f"Gini impurity coefficient: {gini_impurity_coeff:.4f}")
+            print(f"Gini purity coefficient: {gini_purity_coeff:.4f}")
 
         return coverage_names, entropy_names, num_clusters

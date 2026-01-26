@@ -76,6 +76,7 @@ def main() -> None:
                     algorithms,
                     project,
                     input=True,
+                    visualize=False,
                     local_root=experiments_folder,
                     output_path=f"./wandb_analysis/{sut_manual}/diversity",
                     run_filters=run_filters,
