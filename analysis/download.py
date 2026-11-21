@@ -32,7 +32,9 @@ def filter_runs(runs: List[Run], after: datetime = None) -> List[Run]:
             # Time-based filtering
             if after and not (created > after):
                 continue
-                
+            # only seed 6
+            # if "real" not in run.name and ("exida" not in run.name and "atlas" not in run.name):
+            #     continue
             res.append(run)
 
     return res
