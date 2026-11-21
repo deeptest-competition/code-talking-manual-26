@@ -4,6 +4,7 @@ import os
 import json
 from typing import Callable, Optional, List, Dict, Tuple
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
@@ -54,7 +55,8 @@ def download_run_artifacts_relative(
     wb_project_path: str,
     local_root: str = "./wandb_competition",
     filter_runs: Optional[Callable[[List[Run]], List[Run]]] = None,
-    one_per_name: bool = False
+    one_per_name: bool = False,
+    max_workers: int = 6,
 ) -> Dict[str, str]:
     """
     Download W&B run artifacts.
@@ -94,8 +96,9 @@ def download_run_artifacts_relative(
         print(f"Downloading all {len(selected_runs)} runs.")
 
     all_paths = defaultdict(lambda: defaultdict(list))
-    
-    for run in tqdm.tqdm(selected_runs):
+    jobs = []
+
+    for run in selected_runs:
         tags = {t.split(":")[0]: t.split(":")[1] for t in run.tags}
         sut_name = get_sut(project_name, run, tags)
 
@@ -118,6 +121,9 @@ def download_run_artifacts_relative(
         if any(os.scandir(local_path)):
             continue
 
+        jobs.append((run, tags, local_path))
+
+    def _download(run: Run, tags: dict, local_path: str) -> None:
         # Download all logged artifacts
         for artifact in run.logged_artifacts():
             artifact.download(local_path)
@@ -130,6 +136,16 @@ def download_run_artifacts_relative(
         history_df = run.history(keys=None, pandas=True)
         history_df.to_csv(os.path.join(local_path, "run_history.csv"), index=False)
 
+    print(f"Downloading {len(jobs)} runs with {max_workers} workers.")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_download, *job): job for job in jobs}
+        for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
+            run, _, local_path = futures[future]
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Failed to download run {run.name} ({run.id}) to {local_path}: {e}")
+
     print(f"Downloaded {len(all_paths)} run directories.")
     print(f"all_paths:", all_paths)
     return all_paths
@@ -138,4 +154,4 @@ if __name__ == "__main__":
     download_run_artifacts_relative(
         wb_project_path="opentest/competition", 
         filter_runs=filter_runs,
-        local_root="./wandb_competition", one_per_name=True)
+        local_root="./wandb_competition", one_per_name=True, max_workers=6)
